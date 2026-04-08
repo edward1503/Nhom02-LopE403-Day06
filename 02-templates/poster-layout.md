@@ -7,9 +7,12 @@ Poster/slides tóm tắt trưng tại bàn demo. Peer nhìn poster trước khi 
 ## Layout gợi ý (trên xuống dưới)
 
 1. **Tên product + problem statement** (1 câu)
-2. **Problem | Solution** — 2 cột: user nào, pain gì | AI làm gì, auto hay aug
-3. **Demo screenshot** — screenshot hoặc diagram flow chính
-4. **Failure modes | Learning signal** — 2 cột: top 1-2 failure + mitigation | thu data gì
+2. **Before | After** — 2 cột so sánh:
+   - Before: flow hiện tại (user làm gì, mất bao lâu, pain gì)
+   - After: flow với AI (AI làm gì, auto hay aug, cải thiện gì)
+3. **Live demo** — demo chạy được (link prototype hoặc QR code). Nếu mock: screenshot flow chính + 1 prompt/AI call chạy thật bên cạnh
+4. **Impact** — so sánh metric trước vs sau: thời gian, số bước, accuracy, cost... Dùng số cụ thể, không nói chung chung
+5. **Failure modes | Learning signal** — 2 cột: top 1-2 failure + mitigation | thu data gì để cải thiện
 
 ---
 
