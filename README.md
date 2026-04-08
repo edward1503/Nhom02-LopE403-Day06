@@ -71,7 +71,7 @@ Xem chi tiết tools: [`03-tools-guide/prototyping-tools.md`](03-tools-guide/pro
 
 ## SPEC — 6 phần
 
-Dùng template: [`02-templates/spec-template.md`](02-templates/spec-template.md)
+Dùng template: [`02-templates/01-spec-template.md`](02-templates/01-spec-template.md)
 
 | # | Phần | Yêu cầu |
 |---|------|---------|
@@ -360,14 +360,14 @@ Nếu test sớm từ tối D5 thì có thể iterate thêm 2-3 vòng, prompt s�
 
 | File | Dùng cho |
 |------|----------|
-| [`spec-template.md`](02-templates/spec-template.md) | SPEC 6 phần — template chính |
-| [`canvas-template.md`](02-templates/canvas-template.md) | AI Product Canvas |
-| [`user-stories-4path.md`](02-templates/user-stories-4path.md) | User stories × 4 paths |
-| [`eval-metrics.md`](02-templates/eval-metrics.md) | Eval metrics + threshold |
-| [`failure-modes.md`](02-templates/failure-modes.md) | Top 3 failure modes |
-| [`roi-3-scenarios.md`](02-templates/roi-3-scenarios.md) | ROI 3 kịch bản |
-| [`demo-script.md`](02-templates/demo-script.md) | Demo script 2 phút |
-| [`poster-layout.md`](02-templates/poster-layout.md) | Poster/slides layout |
+| [`01-spec-template.md`](02-templates/01-spec-template.md) | SPEC 6 phần — template chính |
+| [`02-canvas-template.md`](02-templates/02-canvas-template.md) | AI Product Canvas |
+| [`03-user-stories-4path.md`](02-templates/03-user-stories-4path.md) | User stories × 4 paths |
+| [`04-eval-metrics.md`](02-templates/04-eval-metrics.md) | Eval metrics + threshold |
+| [`05-failure-modes.md`](02-templates/05-failure-modes.md) | Top 3 failure modes |
+| [`06-roi-3-scenarios.md`](02-templates/06-roi-3-scenarios.md) | ROI 3 kịch bản |
+| [`07-poster-layout.md`](02-templates/07-poster-layout.md) | Poster/slides layout |
+| [`08-demo-script.md`](02-templates/08-demo-script.md) | Demo script 2 phút |
 
 ### Hướng dẫn công cụ — [`03-tools-guide/`](03-tools-guide/)
 
