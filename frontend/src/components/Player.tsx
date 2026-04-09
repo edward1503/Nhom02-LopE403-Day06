@@ -16,6 +16,7 @@ import {
   Lightbulb,
   ChevronLeft,
   ChevronRight,
+  PanelLeftClose,
   PanelRightClose,
   Minimize2,
   Maximize2,
@@ -42,6 +43,10 @@ interface ChatMessage {
   role: 'ai' | 'user';
   content: string;
   isError?: boolean;
+  historyId?: number;
+  confidenceScore?: number;
+  sourceCitation?: string;
+  status?: 'pending' | 'understood' | 'reported';
 }
 
 interface Chapter {
@@ -205,8 +210,33 @@ const AIChatbot = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [reportingId, setReportingId] = useState<number | null>(null);
+  const [correctionText, setCorrectionText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const submitSignal = async (status: 'understood' | 'reported', historyId?: number, msgId?: number) => {
+    if (!historyId) return;
+    try {
+      await fetch('/api/lectures/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          history_id: historyId,
+          status,
+          correction_exact: status === 'reported' ? correctionText : undefined
+        }),
+      });
+      
+      setMessages(prev => prev.map(m => 
+        m.id === msgId ? { ...m, status } : m
+      ));
+      setReportingId(null);
+      setCorrectionText('');
+    } catch (e) {
+      console.error("Signal failed:", e);
+    }
+  };
 
   const captureFrame = (): string | null => {
     const video = videoRef.current;
@@ -294,16 +324,50 @@ const AIChatbot = ({
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
+          aiResponseContent += chunk;
+
+          // Strip metadata markers from visible content
+          let displayContent = aiResponseContent;
+          
+          // Extracts confidence/source
+          const metaMatch = displayContent.match(/###FRONTMETA###(.*?)###FRONTMETA_END###/);
+          let metaData: any = null;
+          if (metaMatch) {
+            try { metaData = JSON.parse(metaMatch[1]); } catch(e) {}
+            displayContent = displayContent.replace(/###FRONTMETA###.*?###FRONTMETA_END###/g, '');
+          }
+
+          // Extracts DB ID
+          const idMatch = displayContent.match(/###HISTORYID###(.*?)###HISTORYID_END###/);
+          let historyId: number | undefined = undefined;
+          if (idMatch) {
+            historyId = parseInt(idMatch[1]);
+            displayContent = displayContent.replace(/###HISTORYID###.*?###HISTORYID_END###/g, '');
+          }
+
           if (isFirstChunk) {
             setIsThinking(false);
             isFirstChunk = false;
-            setMessages(prev => [...prev, { id: aiMessageId, role: 'ai', content: chunk }]);
+            setMessages(prev => [...prev, { 
+              id: aiMessageId, 
+              role: 'ai', 
+              content: displayContent,
+              confidenceScore: metaData?.confidence_score,
+              sourceCitation: metaData?.source_citation,
+              historyId: historyId,
+              status: 'pending'
+            }]);
           } else {
             setMessages(prev => prev.map(m => 
-              m.id === aiMessageId ? { ...m, content: m.content + chunk } : m
+              m.id === aiMessageId ? { 
+                ...m, 
+                content: displayContent,
+                confidenceScore: metaData?.confidence_score || m.confidenceScore,
+                sourceCitation: metaData?.source_citation || m.sourceCitation,
+                historyId: historyId || m.historyId
+              } : m
             ));
           }
-          aiResponseContent += chunk;
         }
       }
     } catch (error) {
@@ -363,6 +427,28 @@ const AIChatbot = ({
                       <div className="whitespace-pre-wrap">{msg.content}</div>
                     ) : (
                       <>
+                        {/* Confidence & Source Badge */}
+                        {msg.role === 'ai' && msg.content && !msg.isError && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                             {msg.confidenceScore !== undefined && (
+                               <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                                 msg.confidenceScore >= 0.8 
+                                   ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                                   : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                               }`}>
+                                 {msg.confidenceScore >= 0.8 ? <CheckCircle2 className="w-2.5 h-2.5" /> : <RotateCcw className="w-2.5 h-2.5" />}
+                                 {Math.round(msg.confidenceScore * 100)}% Confidence
+                               </div>
+                             )}
+                             {msg.sourceCitation && (
+                               <div className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1">
+                                 <FileText className="w-2.5 h-2.5" />
+                                 Source: {msg.sourceCitation}
+                               </div>
+                             )}
+                          </div>
+                        )}
+
                         <ReactMarkdown
                           remarkPlugins={[remarkMath]}
                           rehypePlugins={[rehypeKatex]}
@@ -376,6 +462,67 @@ const AIChatbot = ({
                         >
                           {msg.content}
                         </ReactMarkdown>
+
+                        {/* Learning Signals / Feedback */}
+                        {msg.role === 'ai' && msg.historyId && !msg.isError && (
+                          <div className="mt-3 pt-3 border-t border-outline-variant/10 flex flex-col gap-2">
+                            {msg.status === 'pending' && reportingId !== msg.id && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => submitSignal('understood', msg.historyId, msg.id)}
+                                  className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 text-green-600 rounded-md text-[10px] font-bold hover:bg-green-500/20 transition-colors"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Understood
+                                </button>
+                                <button
+                                  onClick={() => setReportingId(msg.id)}
+                                  className="flex items-center gap-1.5 px-2 py-1 bg-red-500/10 text-red-600 rounded-md text-[10px] font-bold hover:bg-red-500/20 transition-colors"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  Report Error
+                                </button>
+                              </div>
+                            )}
+
+                            {msg.status === 'understood' && (
+                              <div className="text-[10px] font-bold text-green-600 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Correct and Understood
+                              </div>
+                            )}
+
+                            {msg.status === 'reported' && (
+                              <div className="text-[10px] font-bold text-red-600 flex items-center gap-1">
+                                <RotateCcw className="w-3 h-3" />
+                                Error Reported
+                              </div>
+                            )}
+
+                            {reportingId === msg.id && (
+                              <div className="bg-surface-container p-2 rounded-lg border border-outline-variant/20 space-y-2">
+                                <p className="text-[10px] font-bold text-on-surface-variant">What is the correct answer?</p>
+                                <textarea
+                                  className="w-full bg-surface-container-lowest border-none rounded p-2 text-xs focus:ring-1 focus:ring-primary outline-none"
+                                  rows={2}
+                                  placeholder="Type correction here..."
+                                  value={correctionText}
+                                  onChange={(e) => setCorrectionText(e.target.value)}
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <button onClick={() => setReportingId(null)} className="px-2 py-1 text-[10px] font-bold">Cancel</button>
+                                  <button 
+                                    onClick={() => submitSignal('reported', msg.historyId, msg.id)}
+                                    className="px-2 py-1 bg-primary text-on-primary rounded text-[10px] font-bold"
+                                  >
+                                    Submit
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {msg.isError && (
                           <div className="mt-3">
                             <button
@@ -431,7 +578,7 @@ const AIChatbot = ({
                   disabled={isThinking || !lectureId}
                 />
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={isThinking || !lectureId}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 ${isThinking || !lectureId ? 'bg-surface-container-highest text-on-surface-variant/30' : 'bg-primary/10 hover:bg-primary/20 text-primary'
                     }`}
@@ -456,41 +603,23 @@ const AIChatbot = ({
   );
 };
 
-const RightSidebar = ({ isCollapsed, onToggle, lectureId, videoRef }: { isCollapsed: boolean, onToggle: () => void, lectureId?: string, videoRef: React.RefObject<HTMLVideoElement | null> }) => {
-  const [chapters, setChapters] = useState<any[]>([]);
+const RightSidebar = ({ 
+  isCollapsed, 
+  onToggle, 
+  lectureId, 
+  videoRef,
+  chapters,
+  activeChapterIndex
+}: { 
+  isCollapsed: boolean, 
+  onToggle: () => void, 
+  lectureId?: string, 
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+  chapters: any[],
+  activeChapterIndex: number
+}) => {
   const [slides, setSlides] = useState<{name: string, url: string}[]>([]);
-  const [activeChapterIndex, setActiveChapterIndex] = useState<number>(-1);
   const outlineContainerRef = useRef<HTMLDivElement>(null);
-
-  // Time tracking effect
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || chapters.length === 0) return;
-
-    const parseTime = (timeStr: string) => {
-      if (!timeStr) return 0;
-      const parts = timeStr.split(':').map(Number);
-      return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    };
-
-    const chapterTimes = chapters.map(c => parseTime(c.timestamp || c.start_time));
-
-    const handleTimeUpdate = () => {
-      const currentTime = video.currentTime;
-      let activeIdx = -1;
-      for (let i = 0; i < chapterTimes.length; i++) {
-        if (currentTime >= chapterTimes[i]) {
-          activeIdx = i;
-        } else {
-          break;
-        }
-      }
-      setActiveChapterIndex(activeIdx);
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-  }, [chapters, videoRef]);
 
   // Scroll to active chapter
   useEffect(() => {
@@ -504,29 +633,9 @@ const RightSidebar = ({ isCollapsed, onToggle, lectureId, videoRef }: { isCollap
 
   useEffect(() => {
     if (!lectureId) {
-      setChapters([]);
       setSlides([]);
       return;
     }
-    fetch(`/data/cs231n/ToC_Summary/${lectureId.replace('_', '-')}.json`)
-      .then(res => {
-        if (!res.ok) throw new Error("No TOC File");
-        return res.json();
-      })
-      .then(data => {
-        // Handle data map according to the actual JSON structure
-        if (data.table_of_contents) {
-          setChapters(data.table_of_contents);
-        } else if (Array.isArray(data)) {
-          setChapters(data);
-        } else {
-          setChapters([]);
-        }
-      })
-      .catch(err => {
-        console.error("ToC fetch error:", err);
-        setChapters([]);
-      });
       
     // Fetch dynamic slides
     fetch(`/api/lectures/${lectureId}/slides`)
@@ -670,9 +779,13 @@ export default function Player({ onNavigate }: { onNavigate: (view: string) => v
 
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
-  
-  // Start with Chatbot collapsed since it obscures the video
   const [isChatCollapsed, setIsChatCollapsed] = useState(true);
+  
+  // F2: Proactive Suggestion states
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [activeChapterIndex, setActiveChapterIndex] = useState<number>(-1);
+  const [showProactive, setShowProactive] = useState(false);
+  const [proactiveTakeaway, setProactiveTakeaway] = useState<string>("");
 
   const handleSelectLesson = (id: number) => {
     setLessons(prev => prev.map(lesson => {
@@ -684,10 +797,80 @@ export default function Player({ onNavigate }: { onNavigate: (view: string) => v
 
   const activeLesson = lessons.find(l => l.status === 'playing');
 
-  const getCurrentTimestamp = () => {
-    if (videoRef.current) {
-      return videoRef.current.currentTime;
+  // Fetch ToC whenever active lesson changes
+  useEffect(() => {
+    const lectureId = activeLesson?.originalId;
+    if (!lectureId) {
+      setChapters([]);
+      return;
     }
+    fetch(`/data/cs231n/ToC_Summary/${lectureId.replace('_', '-')}.json`)
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => {
+        if (data.table_of_contents) setChapters(data.table_of_contents);
+        else if (Array.isArray(data)) setChapters(data);
+        else setChapters([]);
+      })
+      .catch(() => setChapters([]));
+  }, [activeLesson?.originalId]);
+
+  // Sync active chapter index with video time and handle pause detection
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let pauseTimer: any = null;
+
+    const parseTime = (timeStr: string) => {
+      if (!timeStr) return 0;
+      const parts = timeStr.split(':').map(Number);
+      return parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : parts[0] * 60 + parts[1];
+    };
+
+    const handleTimeUpdate = () => {
+      const currentTime = video.currentTime;
+      let activeIdx = -1;
+      const chapterTimes = chapters.map(c => parseTime(c.timestamp || c.start_time));
+      for (let i = 0; i < chapterTimes.length; i++) {
+        if (currentTime >= chapterTimes[i]) activeIdx = i;
+        else break;
+      }
+      setActiveChapterIndex(activeIdx);
+    };
+
+    const handlePause = () => {
+      // If paused for > 3s, show suggestion from current chapter
+      pauseTimer = setTimeout(() => {
+        if (video.paused && activeChapterIndex >= 0) {
+          const takeaways = chapters[activeChapterIndex].key_takeaways;
+          if (takeaways && takeaways.length > 0) {
+            // Pick a random takeaway or the first one
+            setProactiveTakeaway(takeaways[0]);
+            setShowProactive(true);
+          }
+        }
+      }, 3000);
+    };
+
+    const handlePlay = () => {
+      if (pauseTimer) clearTimeout(pauseTimer);
+      setShowProactive(false);
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('play', handlePlay);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('play', handlePlay);
+      if (pauseTimer) clearTimeout(pauseTimer);
+    };
+  }, [chapters, activeChapterIndex]);
+
+  const getCurrentTimestamp = () => {
+    if (videoRef.current) return videoRef.current.currentTime;
     return 0;
   };
 
@@ -703,6 +886,28 @@ export default function Player({ onNavigate }: { onNavigate: (view: string) => v
         />
         <section className="flex-1 flex flex-col relative min-w-0 bg-surface">
           <VideoPlayer videoUrl={activeLesson?.videoUrl} videoRef={videoRef} lectureId={activeLesson?.originalId} />
+          
+          {/* F2: Proactive Suggestion Banner */}
+          <AnimatePresence>
+            {showProactive && proactiveTakeaway && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                className="mx-4 mb-4 p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-start gap-3 shadow-sm"
+              >
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-label text-[10px] uppercase tracking-wider text-primary font-bold mb-1">Key Takeaway</p>
+                  <p className="text-sm text-on-surface/80 leading-relaxed italic">
+                    "{proactiveTakeaway}"
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
         
         <AIChatbot
@@ -717,6 +922,8 @@ export default function Player({ onNavigate }: { onNavigate: (view: string) => v
           onToggle={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
           lectureId={activeLesson?.originalId}
           videoRef={videoRef}
+          chapters={chapters}
+          activeChapterIndex={activeChapterIndex}
         />
       </main>
     </div>

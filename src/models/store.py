@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -24,8 +24,6 @@ class Lecture(Base):
     title = Column(String, index=True)
     description = Column(Text, nullable=True)
     video_url = Column(String, nullable=True)
-    youtube_id = Column(String, nullable=True)
-    drive_file_id = Column(String, nullable=True)
     duration = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -78,6 +76,16 @@ class QAHistory(Base):
     current_timestamp = Column(Float)
     image_base64 = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # F1: Learning Signals
+    status = Column(String, default="pending")              # pending | understood | reported
+    correction_exact = Column(Text, nullable=True)           # User's correction when reporting
+    latency_ms = Column(Float, nullable=True)                # Request-to-first-chunk latency
+    confidence_score = Column(Float, nullable=True)          # 0.0 - 1.0
+    source_citation = Column(String, nullable=True)          # "Slide 7 / Video 01:23"
+    
+    # F2: Proactive
+    is_proactive = Column(Boolean, default=False)            # From suggestion chip?
     
     user = relationship("User", back_populates="qa_history")
 

@@ -15,10 +15,10 @@ app = FastAPI(title="Lecture Q&A Platform API")
 data_dir = os.path.realpath("data")
 cs231n_dir = os.path.realpath("data/cs231n")
 
-# Mount cs231n resolved path explicitly so Starlette doesn't block symlinks
-app.mount("/data/cs231n", StaticFiles(directory=cs231n_dir), name="data_cs231n")
+# Mount cs231n with follow_symlink since videos/slides/etc are symlinks
+app.mount("/data/cs231n", StaticFiles(directory=cs231n_dir, follow_symlink=True), name="data_cs231n")
 # Mount the rest of data as fallback
-app.mount("/data", StaticFiles(directory=data_dir), name="data")
+app.mount("/data", StaticFiles(directory=data_dir, follow_symlink=True), name="data")
 
 @app.get("/api/lectures/{lecture_id}/slides")
 def get_slides(lecture_id: str):
@@ -65,9 +65,12 @@ def get_subtitles(lecture_id: str):
         
     return Response("\n".join(vtt_lines), media_type="text/vtt")
 
-# Only mount frontend static files if dist exists (so local dev doesn't crash before build)
 if os.path.exists("frontend/dist/assets"):
     app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+# Mount data directory to serve videos and other assets
+if os.path.exists("data"):
+    app.mount("/data", StaticFiles(directory="data"), name="data")
 
 from typing import List, Optional
 
@@ -81,6 +84,12 @@ class AskRequest(BaseModel):
     question: str
     image_base64: Optional[str] = None
     chat_history: List[ChatMessage] = []
+    is_proactive: bool = False
+
+class SignalRequest(BaseModel):
+    history_id: int
+    status: str  # "understood" | "reported"
+    correction_exact: Optional[str] = None
 
 @app.get("/api/lectures")
 def list_lectures(db: Session = Depends(get_db)):
@@ -110,12 +119,32 @@ def ask_question(req: AskRequest, db: Session = Depends(get_db)):
             req.current_timestamp, 
             req.question,
             req.image_base64,
-            req.chat_history
+            req.chat_history,
+            req.is_proactive
         )
         return StreamingResponse(generator, media_type="text/event-stream")
     except Exception as e:
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ERROR in ask_question: {e}", flush=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/lectures/signal")
+def submit_signal(req: SignalRequest, db: Session = Depends(get_db)):
+    """Submit learning signal: 'understood' or 'reported' for a QA history entry."""
+    from datetime import datetime
+    record = db.query(QAHistory).filter(QAHistory.id == req.history_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="History record not found")
+    
+    if req.status not in ("understood", "reported"):
+        raise HTTPException(status_code=400, detail="Status must be 'understood' or 'reported'")
+    
+    record.status = req.status
+    if req.status == "reported" and req.correction_exact:
+        record.correction_exact = req.correction_exact
+    
+    db.commit()
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] SIGNAL: history_id={req.history_id} → {req.status}", flush=True)
+    return {"ok": True, "history_id": req.history_id, "status": req.status}
 
 @app.get("/api/history")
 def get_history(db: Session = Depends(get_db)):

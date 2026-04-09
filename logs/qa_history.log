@@ -16,3 +16,49 @@
 2026-04-09 14:30:58,031 - Error streaming from Gemini: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
 2026-04-09 14:31:09,211 - Sending request to Gemini (gemini-3-flash-preview) for lecture: lecture-1
 2026-04-09 14:31:34,962 - {"time": "2026-04-09 14:31:34", "lecture": "lecture-1", "at": "2594.6s", "q": "trả lời câu hỏi trên", "a": "\"Harmful Stereotypes\" trong bối cảnh bài giảng là các định kiến có hại từ con người được đưa vào dữ liệu huấn luyện, khiến thuật toán Computer Vision học và lặp lại các sai lệch (bias) này, dẫn đến những kết quả không công bằng trong thực tế (ví dụ: nhận diện khuôn mặt sai lệch)."}
+2026-04-09 15:51:18,326 - Sending request to Gemini (gemini-3-flash-preview) for lecture: lecture-1
+2026-04-09 15:51:21,709 - Error: ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
+Traceback (most recent call last):
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/src/services/llm_service.py", line 121, in get_context_and_stream_gemini
+    for chunk in stream:
+                 ^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/models.py", line 6180, in generate_content_stream
+    for chunk in response:
+                 ^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/models.py", line 4776, in _generate_content_stream
+    for response in self._api_client.request_streamed(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1549, in request_streamed
+    session_response = self._request(http_request, http_options, stream=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1327, in _request
+    return self._retry(self._request_once, http_request, stream)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 371, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rin/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/rin/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/tenacity/__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/_api_client.py", line 1304, in _request_once
+    errors.APIError.raise_for_response(response)
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 155, in raise_for_response
+    cls.raise_error(response.status_code, response_json, response)
+  File "/mnt/shared/AI-Thuc-Chien/Day06-AI-Product-Hackathon/.venv/lib/python3.12/site-packages/google/genai/errors.py", line 186, in raise_error
+    raise ServerError(status_code, response_json, response)
+google.genai.errors.ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
+
