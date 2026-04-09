@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 13, "column": 0}, "map": {"version":3,"sources":["file:///D:/VSCODE/VINAI/Day06-AI-Product-Hackathon/frontend/src/app/favicon.ico.mjs%20%28structured%20image%20object%29"],"sourcesContent":["import src from \"IMAGE\";\nexport default { src, width: 256, height: 256 }\n"],"names":["src","width","height"],"mappings":";;;;AAAA;;uCACe;IAAEA,KAAAA,0IAAG;IAAEC,OAAO;IAAKC,QAAQ;AAAI"}},
+    {"offset": {"line": 28, "column": 0}, "map": {"version":3,"sources":["file:///D:/VSCODE/VINAI/Day06-AI-Product-Hackathon/frontend/src/app/sign-in/%5B%5B...sign-in%5D%5D/page.js"],"sourcesContent":["import { SignIn } from \"@clerk/nextjs\";\n\nexport default function SignInPage() {\n  return (\n    <div style={{\n      display: \"flex\",\n      justifyContent: \"center\",\n      alignItems: \"center\",\n      minHeight: \"100vh\",\n      background: \"#0f172a\",\n    }}>\n      <SignIn />\n    </div>\n  );\n}\n"],"names":["SignInPage","style","display","justifyContent","alignItems","minHeight","background"],"mappings":";;;;;AAAA;;;AAEe,SAASA;IACtB,qBACE,8OAAC;QAAIC,OAAO;YACVC,SAAS;YACTC,gBAAgB;YAChBC,YAAY;YACZC,WAAW;YACXC,YAAY;QACd;kBACE,cAAA,8OAAC,gMAAM;;;;;;;;;;AAGb"}}]
+}

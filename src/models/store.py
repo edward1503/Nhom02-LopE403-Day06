@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -77,8 +77,14 @@ class QAHistory(Base):
     thoughts = Column(Text, nullable=True)
     current_timestamp = Column(Float)
     image_base64 = Column(Text, nullable=True)
+    # Learning signals & telemetry
+    status = Column(String, default="pending")  # pending, understood, reported
+    correction_exact = Column(Text, nullable=True)
+    latency_ms = Column(Float, nullable=True)
+    confidence_score = Column(Float, nullable=True)
+    is_proactive = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     user = relationship("User", back_populates="qa_history")
 
 def init_db():

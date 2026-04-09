@@ -8,3 +8,4 @@ __pycache__/
 # Large binary files — keep transcripts and ToC in git
 data/**/*.mp4
 data/**/*.pdf
+frontend

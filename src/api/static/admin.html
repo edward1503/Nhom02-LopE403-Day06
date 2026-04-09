@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AI Tutor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a; --card: #1e293b; --accent: #38bdf8;
+            --text: #f8fafc; --dim: #94a3b8; --border: #334155;
+            --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        header {
+            padding: 0.75rem 1.5rem; background: rgba(15,23,42,0.95);
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 10;
+        }
+        header h2 { color: var(--accent); font-size: 1.05rem; }
+        .back-link {
+            color: var(--dim); font-size: 0.82rem; text-decoration: none;
+            padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; transition: all 0.2s;
+        }
+        .back-link:hover { color: var(--text); border-color: var(--dim); }
+
+        main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+        /* ── Metric cards ── */
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .metric-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.3rem;
+        }
+        .metric-label { font-size: 0.78rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-value { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
+        .metric-target { font-size: 0.74rem; color: var(--dim); }
+        .metric-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 0.5rem; overflow: hidden; }
+        .metric-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+        .good  { color: var(--green); }
+        .warn  { color: var(--yellow); }
+        .bad   { color: var(--red); }
+        .good-fill  { background: var(--green); }
+        .warn-fill  { background: var(--yellow); }
+        .bad-fill   { background: var(--red); }
+
+        /* ── Summary row ── */
+        .summary-row {
+            display: flex; gap: 1.5rem; align-items: center;
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+            padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: var(--dim);
+        }
+        .summary-row strong { color: var(--text); }
+
+        /* ── Corrections table ── */
+        .section-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--text); }
+        .table-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        thead { background: rgba(0,0,0,0.25); }
+        th { padding: 0.65rem 1rem; text-align: left; color: var(--dim); font-weight: 500; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+        td { padding: 0.6rem 1rem; border-top: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .correction-text { color: #fca5a5; }
+        .confidence-pill {
+            display: inline-block; padding: 0.1rem 0.45rem; border-radius: 10px;
+            font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+        }
+        .conf-low  { background: rgba(239,68,68,0.18); color: #fca5a5; }
+        .conf-mid  { background: rgba(234,179,8,0.18); color: #fde047; }
+        .conf-high { background: rgba(34,197,94,0.18); color: #86efac; }
+        .date-cell { color: var(--dim); white-space: nowrap; font-size: 0.75rem; }
+        .truncate { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+        .empty-row td { text-align: center; color: var(--dim); padding: 2rem; }
+
+        /* ── Loading / error ── */
+        .loading { text-align: center; padding: 3rem; color: var(--dim); }
+        @media (max-width: 700px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+            th, td { padding: 0.5rem 0.6rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>📊 Admin Dashboard — AI Tutor</h2>
+        <a href="/" class="back-link">← Về trang chính</a>
+    </header>
+
+    <main>
+        <div id="loadingMsg" class="loading">Đang tải dữ liệu...</div>
+        <div id="dashboard" style="display:none;">
+
+            <!-- Metric cards -->
+            <div class="metrics-grid">
+                <div class="metric-card" id="card-understood">
+                    <div class="metric-label">Tỷ lệ Đã hiểu</div>
+                    <div class="metric-value" id="val-understood">—</div>
+                    <div class="metric-target">Mục tiêu ≥ 75%</div>
+                    <div class="metric-bar"><div class="metric-bar-fill" id="bar-understood"></div></div>
+                </div>
+                <div class="metric-card" id="card-hallucination">
+                    <div class="metric-label">Tỷ lệ Báo sai (Hallucination)</div>
+                    <div class="metric-value" id="val-hallucination">—</div>
+                    <div class="metric-target">Mục tiêu ≤ 5%</div>
+                    <div class="metric-bar"><div class="metric-bar-fill" id="bar-hallucination"></div></div>
+                </div>
+                <div class="metric-card" id="card-latency">
+                    <div class="metric-label">Latency P95</div>
+                    <div class="metric-value" id="val-latency">—</div>
+                    <div class="metric-target">Mục tiêu ≤ 2.0s</div>
+                    <div class="metric-bar"><div class="metric-bar-fill" id="bar-latency"></div></div>
+                </div>
+            </div>
+
+            <!-- Summary row -->
+            <div class="summary-row">
+                <span>Tổng câu hỏi: <strong id="sum-total">—</strong></span>
+                <span>Đã hiểu: <strong id="sum-understood" class="good">—</strong></span>
+                <span>Báo sai: <strong id="sum-reported" class="bad">—</strong></span>
+                <span>Chưa phản hồi: <strong id="sum-pending">—</strong></span>
+            </div>
+
+            <!-- Correction log -->
+            <div class="section-title">📋 Correction Log (báo sai gần đây)</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Câu hỏi</th>
+                            <th>Trả lời AI</th>
+                            <th>Sửa đúng của học sinh</th>
+                            <th>Conf.</th>
+                            <th>Ngày</th>
+                        </tr>
+                    </thead>
+                    <tbody id="correctionTableBody">
+                        <tr class="empty-row"><td colspan="6">Chưa có báo cáo nào</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    fetch('/api/admin/metrics')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(renderDashboard)
+        .catch(err => {
+            document.getElementById('loadingMsg').textContent = `Lỗi tải dữ liệu: ${err.message}`;
+        });
+
+    function renderDashboard(data) {
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+
+        // ── Understood ──
+        const pu = data.pct_understood;
+        const understood_class = pu >= 75 ? 'good' : pu >= 50 ? 'warn' : 'bad';
+        const understood_fill  = pu >= 75 ? 'good-fill' : pu >= 50 ? 'warn-fill' : 'bad-fill';
+        setText('val-understood', `${pu}%`, understood_class);
+        setBar('bar-understood', Math.min(pu, 100), understood_fill);
+
+        // ── Hallucination ──
+        const ph = data.pct_hallucination;
+        const hall_class = ph <= 5 ? 'good' : ph <= 15 ? 'warn' : 'bad';
+        const hall_fill  = ph <= 5 ? 'good-fill' : ph <= 15 ? 'warn-fill' : 'bad-fill';
+        setText('val-hallucination', `${ph}%`, hall_class);
+        setBar('bar-hallucination', Math.min(ph * 5, 100), hall_fill); // scale 0-20% → 0-100px
+
+        // ── Latency P95 ──
+        const lat = data.latency_p95_s;
+        const lat_class = lat <= 2 ? 'good' : lat <= 4 ? 'warn' : 'bad';
+        const lat_fill  = lat <= 2 ? 'good-fill' : lat <= 4 ? 'warn-fill' : 'bad-fill';
+        setText('val-latency', lat > 0 ? `${lat}s` : '—', lat_class);
+        setBar('bar-latency', lat > 0 ? Math.min(lat / 6 * 100, 100) : 0, lat_fill); // scale 0-6s
+
+        // ── Summary row ──
+        const pending = data.total - data.understood - data.reported;
+        document.getElementById('sum-total').textContent     = data.total;
+        document.getElementById('sum-understood').textContent = data.understood;
+        document.getElementById('sum-reported').textContent  = data.reported;
+        document.getElementById('sum-pending').textContent   = Math.max(0, pending);
+
+        // ── Correction table ──
+        const tbody = document.getElementById('correctionTableBody');
+        if (!data.corrections.length) return;
+        tbody.innerHTML = data.corrections.map((c, i) => {
+            const conf = c.confidence_score;
+            const confLabel = conf === null || conf === undefined ? '—'
+                : `${Math.round(conf * 100)}%`;
+            const confClass = conf === null ? '' : conf < 0.5 ? 'conf-low' : conf < 0.8 ? 'conf-mid' : 'conf-high';
+            const dateStr = c.created_at ? formatDate(c.created_at) : '—';
+            return `<tr>
+                <td>${c.id}</td>
+                <td><span class="truncate" title="${esc(c.question)}">${esc(c.question)}</span></td>
+                <td><span class="truncate" title="${esc(c.answer)}">${esc(c.answer)}</span></td>
+                <td class="correction-text">${c.correction ? esc(c.correction) : '<em style="color:var(--dim)">—</em>'}</td>
+                <td>${conf !== null && conf !== undefined ? `<span class="confidence-pill ${confClass}">${confLabel}</span>` : '—'}</td>
+                <td class="date-cell">${dateStr}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function setText(id, text, cls) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.className = `metric-value ${cls}`;
+    }
+
+    function setBar(id, pct, cls) {
+        const el = document.getElementById(id);
+        el.style.width = `${Math.round(pct)}%`;
+        el.className = `metric-bar-fill ${cls}`;
+    }
+
+    function esc(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatDate(isoStr) {
+        try {
+            const d = new Date(isoStr);
+            const pad = n => String(n).padStart(2,'0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        } catch { return isoStr; }
+    }
+    </script>
+</body>
+</html>

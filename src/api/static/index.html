@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Tutor - Lecture Q&A</title>
+    <title>AI Tutor - Gia sư Thông minh</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -16,6 +16,9 @@
             --text: #f8fafc;
             --dim: #94a3b8;
             --border: #334155;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -26,31 +29,75 @@
         header {
             padding: 0.75rem 1.5rem; background: rgba(15,23,42,0.95);
             border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+            flex-shrink: 0;
         }
-        header h2 { color: var(--accent); font-size: 1.1rem; }
+        header h2 { color: var(--accent); font-size: 1.1rem; white-space: nowrap; }
+        .header-right { display: flex; align-items: center; gap: 0.75rem; }
         select { background: var(--card); color: white; border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 6px; }
+        .admin-link {
+            color: var(--dim); font-size: 0.8rem; text-decoration: none;
+            padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 6px;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .admin-link:hover { color: var(--text); border-color: var(--dim); }
 
-        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem; padding: 0.75rem; flex: 1; overflow: hidden; }
-        .video-section { background: var(--card); border-radius: 12px; padding: 0.75rem; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
-        video { width: 100%; border-radius: 8px; }
-        .video-info { display: flex; justify-content: space-between; align-items: center; color: var(--dim); font-size: 0.85rem; }
+        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem; padding: 0.75rem; flex: 1; overflow: hidden; min-height: 0; }
+
+        /* ── Video Section ── */
+        .video-section {
+            background: var(--card); border-radius: 12px; padding: 0.75rem;
+            border: 1px solid var(--border); display: flex; flex-direction: column;
+            gap: 0.5rem; overflow: hidden; min-height: 0;
+        }
+        video { width: 100%; border-radius: 8px; flex-shrink: 0; }
+        .video-info {
+            display: flex; justify-content: space-between; align-items: center;
+            color: var(--dim); font-size: 0.85rem; flex-wrap: wrap; gap: 0.5rem; flex-shrink: 0;
+        }
         .timestamp-control { display: flex; align-items: center; gap: 0.5rem; }
         .timestamp-control input[type="range"] { width: 120px; accent-color: var(--accent); }
-        .timestamp-control input[type="text"] { width: 70px; background: var(--bg); border: 1px solid var(--border); color: white; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem; text-align: center; font-family: monospace; }
+        .timestamp-control input[type="text"] {
+            width: 72px; background: var(--bg); border: 1px solid var(--border);
+            color: white; padding: 0.2rem 0.4rem; border-radius: 4px;
+            font-size: 0.8rem; text-align: center; font-family: monospace;
+        }
 
-        .chat-section { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-        .chat-history { flex: 1; padding: 0.75rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; }
-        .msg { padding: 0.6rem 0.8rem; border-radius: 10px; max-width: 92%; line-height: 1.6; font-size: 0.9rem; }
-        .msg-user { align-self: flex-end; background: var(--accent); color: #0f172a; font-weight: 500; white-space: pre-wrap; }
-        .msg-ai { align-self: flex-start; background: #334155; width: 95%; }
-        /* Markdown inside AI messages */
+        /* ToC */
+        .toc-section {
+            overflow-y: auto; max-height: 130px; border-top: 1px solid var(--border);
+            padding-top: 0.4rem; flex-shrink: 0;
+        }
+        .toc-item {
+            font-size: 0.78rem; padding: 0.28rem 0.5rem; border-radius: 5px;
+            cursor: pointer; display: flex; gap: 0.5rem; color: var(--dim);
+            transition: all 0.15s;
+        }
+        .toc-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+        .toc-item.active { background: rgba(56,189,248,0.12); color: var(--text); }
+        .toc-time { color: var(--accent); font-family: monospace; white-space: nowrap; }
+
+        /* ── Chat Section ── */
+        .chat-section {
+            display: flex; flex-direction: column; background: var(--card);
+            border-radius: 12px; border: 1px solid var(--border);
+            overflow: hidden; min-height: 0;
+        }
+        .chat-history {
+            flex: 1; padding: 0.75rem; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 0.75rem; min-height: 0;
+        }
+        .msg { padding: 0.6rem 0.8rem; border-radius: 10px; line-height: 1.6; font-size: 0.88rem; }
+        .msg-user { align-self: flex-end; background: var(--accent); color: #0f172a; font-weight: 500; white-space: pre-wrap; max-width: 85%; }
+        .msg-ai { align-self: flex-start; background: #334155; width: 98%; }
+
+        /* Markdown */
         .msg-ai h1,.msg-ai h2,.msg-ai h3,.msg-ai h4 { margin: 0.5em 0 0.3em; color: var(--accent); }
-        .msg-ai h3 { font-size: 1rem; }
+        .msg-ai h3 { font-size: 0.95rem; }
         .msg-ai p { margin: 0.3em 0; }
         .msg-ai ul,.msg-ai ol { margin: 0.3em 0 0.3em 1.2em; }
         .msg-ai li { margin: 0.15em 0; }
-        .msg-ai code { background: rgba(0,0,0,0.3); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; }
+        .msg-ai code { background: rgba(0,0,0,0.3); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.83em; }
         .msg-ai pre { background: rgba(0,0,0,0.3); padding: 0.6em; border-radius: 6px; overflow-x: auto; margin: 0.4em 0; }
         .msg-ai pre code { background: none; padding: 0; }
         .msg-ai blockquote { border-left: 3px solid var(--accent); padding-left: 0.6em; margin: 0.4em 0; color: var(--dim); }
@@ -58,68 +105,137 @@
         .msg-ai .katex { font-size: 1em; }
         .msg-ai .katex-display { margin: 0.5em 0; overflow-x: auto; }
 
-        .thinking-indicator { color: var(--accent); font-style: italic; font-size: 0.85rem; }
-        .thinking-indicator::after {
-            content: '';
-            animation: dots 1.5s steps(4, end) infinite;
+        /* F1: Feedback */
+        .msg-feedback { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.08); }
+        .source-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            font-size: 0.73rem; color: var(--dim); background: rgba(0,0,0,0.25);
+            padding: 0.18rem 0.5rem; border-radius: 4px; margin-bottom: 0.4rem;
         }
+        .confidence-warning {
+            background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.35);
+            color: #fde047; font-size: 0.76rem; padding: 0.3rem 0.6rem;
+            border-radius: 6px; margin-bottom: 0.4rem;
+        }
+        .feedback-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-sm {
+            border: none; padding: 0.28rem 0.65rem; border-radius: 6px;
+            font-size: 0.76rem; cursor: pointer; font-family: inherit;
+            transition: all 0.15s; width: auto; margin: 0;
+        }
+        .btn-understood { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+        .btn-understood:hover { background: rgba(34,197,94,0.25); opacity: 1; }
+        .btn-understood.done { background: rgba(34,197,94,0.28); font-weight: 600; cursor: default; }
+        .btn-report { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+        .btn-report:hover { background: rgba(239,68,68,0.22); opacity: 1; }
+        .correction-form { margin-top: 0.45rem; display: none; }
+        .correction-form.open { display: block; }
+        .correction-form textarea {
+            width: 100%; background: var(--bg); border: 1px solid rgba(239,68,68,0.4);
+            color: white; padding: 0.4rem 0.5rem; border-radius: 6px; resize: none;
+            font-family: inherit; font-size: 0.8rem; outline: none;
+        }
+        .correction-form textarea:focus { border-color: #ef4444; }
+        .btn-submit-correction {
+            background: rgba(239,68,68,0.55); color: white; border: none;
+            padding: 0.28rem 0.7rem; border-radius: 6px; font-size: 0.76rem;
+            cursor: pointer; font-family: inherit; margin-top: 0.3rem;
+            width: auto; transition: opacity 0.2s;
+        }
+        .btn-submit-correction:hover { opacity: 0.8; }
+
+        /* F3: Follow-up hint */
+        .msg-followup {
+            align-self: flex-start; width: 98%;
+            background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.2);
+            border-radius: 10px; padding: 0.55rem 0.8rem;
+            font-size: 0.82rem; color: var(--dim);
+        }
+        .msg-followup a { color: var(--accent); text-decoration: none; cursor: pointer; }
+        .msg-followup a:hover { text-decoration: underline; }
+
+        /* Thinking */
+        .thinking-indicator { color: var(--accent); font-style: italic; font-size: 0.85rem; }
+        .thinking-indicator::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
         @keyframes dots {
-            0%   { content: ''; }
-            25%  { content: '.'; }
-            50%  { content: '..'; }
-            75%  { content: '...'; }
-            100% { content: ''; }
+            0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; }
         }
 
-        .chat-input { padding: 0.75rem; border-top: 1px solid var(--border); }
-        textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: white; padding: 0.6rem; border-radius: 8px; resize: none; outline: none; font-family: inherit; font-size: 0.9rem; }
-        textarea:focus { border-color: var(--accent); }
-        button {
-            margin-top: 0.5rem; width: 100%; background: var(--accent); color: #0f172a;
-            border: none; padding: 0.6rem; border-radius: 8px; font-weight: 600; cursor: pointer;
-            transition: opacity 0.2s;
+        /* Chat input */
+        .chat-input { padding: 0.65rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+        .chat-input textarea {
+            width: 100%; background: var(--bg); border: 1px solid var(--border);
+            color: white; padding: 0.55rem; border-radius: 8px; resize: none;
+            outline: none; font-family: inherit; font-size: 0.88rem;
         }
-        button:hover { opacity: 0.85; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .chat-input textarea:focus { border-color: var(--accent); }
+        .chat-input button {
+            margin-top: 0.45rem; width: 100%; background: var(--accent); color: #0f172a;
+            border: none; padding: 0.55rem; border-radius: 8px; font-weight: 600;
+            cursor: pointer; transition: opacity 0.2s; font-family: inherit;
+        }
+        .chat-input button:hover { opacity: 0.85; }
+        .chat-input button:disabled { opacity: 0.4; cursor: not-allowed; }
 
         .error { color: #ef4444; }
-        .user-info { display: flex; align-items: center; gap: 0.75rem; }
-        .user-name { color: var(--dim); font-size: 0.85rem; }
-        .logout-btn {
-            background: transparent; color: var(--dim); border: 1px solid var(--border);
-            padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.8rem;
-            cursor: pointer; font-family: inherit; transition: all 0.2s;
-            width: auto; margin: 0;
+
+        /* ── F2: Suggestion Chip ── */
+        #suggestionChip {
+            display: none; position: fixed; bottom: 88px; right: 22px; z-index: 1000;
+            background: #1a3050; border: 1px solid var(--accent); border-radius: 12px;
+            padding: 0.75rem 1rem; max-width: 270px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.5); animation: chipIn 0.25s ease;
         }
-        .logout-btn:hover { color: var(--text); border-color: var(--dim); opacity: 1; }
+        @keyframes chipIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .chip-emoji { font-size: 1.2rem; margin-bottom: 0.2rem; }
+        .chip-text { font-size: 0.82rem; color: var(--text); margin: 0.2rem 0 0.5rem; }
+        .chip-concept { color: var(--accent); font-weight: 600; }
+        .chip-btns { display: flex; gap: 0.5rem; }
+        .chip-yes {
+            background: var(--accent); color: #0f172a; border: none;
+            padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.8rem;
+            font-weight: 600; cursor: pointer; font-family: inherit;
+            width: auto; margin: 0; transition: opacity 0.2s;
+        }
+        .chip-yes:hover { opacity: 0.85; }
+        .chip-no {
+            background: transparent; color: var(--dim); border: 1px solid var(--border);
+            padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem;
+            cursor: pointer; font-family: inherit; width: auto; margin: 0; transition: all 0.15s;
+        }
+        .chip-no:hover { color: var(--text); opacity: 1; }
     </style>
 </head>
 <body>
     <header>
         <h2>🎓 AI Tutor</h2>
-        <div class="user-info">
+        <div class="header-right">
             <select id="lectureSelect"></select>
-            <span class="user-name" id="userName"></span>
-            <button class="logout-btn" id="logoutBtn" onclick="logout()">Logout</button>
+            <a href="/admin" class="admin-link">📊 Admin</a>
         </div>
     </header>
 
     <div class="container">
+        <!-- Video + ToC -->
         <div class="video-section">
             <div id="videoContainer">
                 <video id="mainVideo" controls crossorigin="anonymous" style="display:none;"></video>
-                <div id="noVideoMsg" style="display:flex; align-items:center; justify-content:center; aspect-ratio:16/9; color:var(--dim); font-size:0.9rem;">Chọn bài giảng để xem video</div>
+                <div id="noVideoMsg" style="display:flex;align-items:center;justify-content:center;aspect-ratio:16/9;color:var(--dim);font-size:0.9rem;">
+                    Chọn bài giảng để xem video
+                </div>
             </div>
             <div class="video-info">
                 <span id="videoTitle">Chọn bài giảng...</span>
                 <div class="timestamp-control">
                     <span>Timestamp:</span>
                     <input type="range" id="timestampSlider" min="0" max="3600" value="0" step="1">
-                    <input type="text" id="timestampInput" value="00:00:00" title="Nhập thời gian (HH:MM:SS)">
+                    <input type="text" id="timestampInput" value="00:00:00" title="HH:MM:SS">
                 </div>
             </div>
+            <div class="toc-section" id="tocSection" style="display:none;"></div>
         </div>
 
+        <!-- Chat -->
         <div class="chat-section">
             <div class="chat-history" id="chatHistory">
                 <div class="msg msg-ai">Chào bạn! Hãy đặt câu hỏi bất cứ lúc nào trong khi xem video. Tôi sẽ tự động biết bạn đang thắc mắc tại giây thứ bao nhiêu.</div>
@@ -131,219 +247,421 @@
         </div>
     </div>
 
+    <!-- F2: Proactive Suggestion Chip -->
+    <div id="suggestionChip">
+        <div class="chip-emoji">💡</div>
+        <div class="chip-text">Bạn muốn hiểu rõ hơn về <span class="chip-concept" id="chipConcept"></span>?</div>
+        <div class="chip-btns">
+            <button class="chip-yes" onclick="acceptSuggestion()">Có, giải thích đi</button>
+            <button class="chip-no" onclick="dismissSuggestion()">✕ Không</button>
+        </div>
+    </div>
+
     <script>
-        const video = document.getElementById('mainVideo');
-        const noVideoMsg = document.getElementById('noVideoMsg');
-        const lectureSelect = document.getElementById('lectureSelect');
-        const chatHistory = document.getElementById('chatHistory');
-        const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const timestampSlider = document.getElementById('timestampSlider');
-        const timestampInput = document.getElementById('timestampInput');
-        let lectures = [];
-        let manualTimestamp = 0;
+    // ─── DOM refs ─────────────────────────────────────────────────
+    const video          = document.getElementById('mainVideo');
+    const noVideoMsg     = document.getElementById('noVideoMsg');
+    const lectureSelect  = document.getElementById('lectureSelect');
+    const chatHistory    = document.getElementById('chatHistory');
+    const userInput      = document.getElementById('userInput');
+    const sendBtn        = document.getElementById('sendBtn');
+    const timestampSlider = document.getElementById('timestampSlider');
+    const timestampInput  = document.getElementById('timestampInput');
+    const suggestionChip  = document.getElementById('suggestionChip');
 
-        // Auth check
-        fetch('/api/auth/me').then(r => {
-            if (!r.ok) { window.location.href = '/login'; return; }
-            return r.json();
-        }).then(user => {
-            if (!user) return;
-            document.getElementById('userName').textContent = `Xin chào, ${user.name}`;
-        });
+    // ─── State ────────────────────────────────────────────────────
+    let lectures = [];
+    let currentChapters = [];
+    let manualTimestamp = 0;
 
-        async function logout() {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            window.location.href = '/login';
-        }
+    // F2: proactive chip state
+    let pauseTimer = null;
+    let chipConcept = '';
+    let chipTimestamp = 0;
+    let proactiveSuggestions = 0;
+    let proactiveDismissals = 0;
+    let lastChipAt = 0;
 
-        // Load lectures
-        fetch('/api/lectures').then(r => r.json()).then(data => {
+    // F3: turn tracking
+    let conversationTurns = []; // { ts: number, understood: bool }
+
+    // ─── Load lectures ────────────────────────────────────────────
+    fetch('/api/lectures')
+        .then(r => r.json())
+        .then(data => {
             lectures = data;
-            lectureSelect.innerHTML = data.map(l => `<option value="${l.id}">${l.title}</option>`).join('');
+            lectureSelect.innerHTML = data.length
+                ? data.map(l => `<option value="${l.id}">${l.title}</option>`).join('')
+                : '<option>Không có bài giảng</option>';
             if (data.length) selectLecture(data[0].id);
-        });
+        })
+        .catch(() => { lectureSelect.innerHTML = '<option>Lỗi tải bài giảng</option>'; });
 
-        function selectLecture(id) {
-            const lec = lectures.find(l => l.id === id);
-            if (!lec) return;
-            document.getElementById('videoTitle').innerText = lec.title;
+    function selectLecture(id) {
+        const lec = lectures.find(l => l.id === id);
+        if (!lec) return;
+        document.getElementById('videoTitle').textContent = lec.title;
+        video.style.display = 'none';
+        noVideoMsg.style.display = 'none';
 
-            video.style.display = 'none';
-            noVideoMsg.style.display = 'none';
-
-            if (lec.video_url) {
-                video.src = lec.video_url;
-                video.style.display = 'block';
-                video.load();
-            } else {
-                noVideoMsg.style.display = 'flex';
-            }
-        }
-        lectureSelect.addEventListener('change', e => selectLecture(e.target.value));
-
-        // Timestamp tracking: local video auto-updates, drive uses manual slider
-        video.addEventListener('timeupdate', () => {
-            const sec = Math.floor(video.currentTime);
-            manualTimestamp = sec;
-            timestampSlider.value = sec;
-            timestampInput.value = formatTime(sec);
-        });
-
-        timestampSlider.addEventListener('input', () => {
-            manualTimestamp = parseInt(timestampSlider.value);
-            timestampInput.value = formatTime(manualTimestamp);
-            if (!video.paused || video.src) video.currentTime = manualTimestamp;
-        });
-
-        timestampInput.addEventListener('change', () => {
-            const sec = parseTime(timestampInput.value);
-            if (sec !== null) {
-                manualTimestamp = sec;
-                timestampSlider.value = sec;
-                if (video.src) video.currentTime = sec;
-            }
-        });
-
-        function formatTime(sec) {
-            const h = String(Math.floor(sec / 3600)).padStart(2, '0');
-            const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-            const s = String(sec % 60).padStart(2, '0');
-            return `${h}:${m}:${s}`;
+        if (lec.video_url) {
+            video.src = lec.video_url;
+            video.style.display = 'block';
+            video.load();
+        } else {
+            noVideoMsg.style.display = 'flex';
         }
 
-        function parseTime(str) {
-            const parts = str.split(':').map(Number);
-            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-            if (parts.length === 2) return parts[0] * 60 + parts[1];
-            return null;
-        }
+        // Load ToC
+        fetch(`/api/lectures/${id}/toc`)
+            .then(r => r.ok ? r.json() : [])
+            .then(chapters => { currentChapters = chapters; renderToC(chapters); })
+            .catch(() => { currentChapters = []; });
+    }
 
-        function captureFrame() {
-            if (!video.src || video.videoWidth === 0) return null;
-            try {
-                const c = document.createElement('canvas');
-                c.width = video.videoWidth; c.height = video.videoHeight;
-                c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-                return c.toDataURL('image/jpeg', 0.7).split(',')[1];
-            } catch { return null; }
-        }
+    lectureSelect.addEventListener('change', e => selectLecture(e.target.value));
 
-        // Enter key sends
-        userInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); }
+    // ─── ToC ─────────────────────────────────────────────────────
+    function renderToC(chapters) {
+        const tocSection = document.getElementById('tocSection');
+        if (!chapters.length) { tocSection.style.display = 'none'; return; }
+        tocSection.style.display = 'block';
+        tocSection.innerHTML = chapters.map((c, i) =>
+            `<div class="toc-item" id="toc-${i}" onclick="seekTo(${c.start_time})">
+                <span class="toc-time">${formatTime(c.start_time)}</span>
+                <span>${escHtml(c.title)}</span>
+            </div>`
+        ).join('');
+    }
+
+    function updateToCHighlight(sec) {
+        currentChapters.forEach((c, i) => {
+            const el = document.getElementById(`toc-${i}`);
+            if (el) el.classList.toggle('active', c.start_time <= sec && (c.end_time || Infinity) >= sec);
         });
+    }
 
-        sendBtn.addEventListener('click', async () => {
-            const q = userInput.value.trim();
-            if (!q) return;
+    function seekTo(sec) {
+        manualTimestamp = sec;
+        if (video.src) video.currentTime = sec;
+        timestampSlider.value = sec;
+        timestampInput.value = formatTime(sec);
+    }
 
-            const ts = video.src ? video.currentTime : manualTimestamp;
-            const lid = lectureSelect.value;
-            const img = captureFrame();
+    // ─── Timestamp sync ───────────────────────────────────────────
+    video.addEventListener('timeupdate', () => {
+        const sec = Math.floor(video.currentTime);
+        manualTimestamp = sec;
+        timestampSlider.value = sec;
+        timestampInput.value = formatTime(sec);
+        updateToCHighlight(sec);
+    });
+    timestampSlider.addEventListener('input', () => {
+        manualTimestamp = parseInt(timestampSlider.value);
+        timestampInput.value = formatTime(manualTimestamp);
+        if (video.src) video.currentTime = manualTimestamp;
+    });
+    timestampInput.addEventListener('change', () => {
+        const sec = parseTime(timestampInput.value);
+        if (sec !== null) { manualTimestamp = sec; timestampSlider.value = sec; if (video.src) video.currentTime = sec; }
+    });
 
-            // User message
-            const uMsg = document.createElement('div');
-            uMsg.className = 'msg msg-user';
-            uMsg.innerText = q;
-            chatHistory.appendChild(uMsg);
-            userInput.value = '';
-            sendBtn.disabled = true;
+    // ─── F2: Proactive Suggestion ─────────────────────────────────
+    video.addEventListener('pause',   () => scheduleChip());
+    video.addEventListener('play',    () => clearTimeout(pauseTimer));
+    video.addEventListener('seeking', () => clearTimeout(pauseTimer));
 
-            // AI message with thinking animation
-            const aiMsg = document.createElement('div');
-            aiMsg.className = 'msg msg-ai';
-            const thinkSpan = document.createElement('span');
-            thinkSpan.className = 'thinking-indicator';
-            thinkSpan.innerText = '🧠 Thinking';
-            aiMsg.appendChild(thinkSpan);
-            chatHistory.appendChild(aiMsg);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+    function scheduleChip() {
+        clearTimeout(pauseTimer);
+        pauseTimer = setTimeout(() => {
+            if (proactiveDismissals >= 3) return;                         // session cap
+            const now = Date.now();
+            if (proactiveSuggestions >= 2 && now - lastChipAt < 600000) return; // 2 per 10 min
+            if (now - lastChipAt < 180000) return;                        // min 3 min gap
 
-            try {
-                const resp = await fetch('/api/lectures/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lecture_id: lid, current_timestamp: ts, question: q, image_base64: img })
-                });
+            const ts = video.currentTime;
+            const concept = getChapterAt(ts);
+            if (!concept) return;
 
-                if (!resp.ok) {
-                    const errBody = await resp.text();
-                    aiMsg.innerHTML = `<span class="error">⚠️ Server error (${resp.status}): ${errBody.slice(0, 200)}</span>`;
-                    sendBtn.disabled = false;
-                    return;
-                }
+            chipConcept = concept;
+            chipTimestamp = ts;
+            document.getElementById('chipConcept').textContent = concept;
+            suggestionChip.style.display = 'block';
+            proactiveSuggestions++;
+            lastChipAt = now;
+        }, 3000);
+    }
 
-                const reader = resp.body.getReader();
-                const decoder = new TextDecoder();
-                let rawText = '';
-                let hasError = false;
+    function getChapterAt(ts) {
+        const ch = currentChapters.find(c => c.start_time <= ts && (c.end_time || Infinity) >= ts);
+        return ch ? ch.title : null;
+    }
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+    function dismissSuggestion() {
+        suggestionChip.style.display = 'none';
+        proactiveDismissals++;
+    }
 
-                    const text = decoder.decode(value);
-                    for (const line of text.split('\n')) {
-                        if (!line.trim()) continue;
-                        try {
-                            const data = JSON.parse(line.trim());
-                            if (data.e) {
-                                aiMsg.innerHTML = `<span class="error">⚠️ ${data.e}</span>`;
-                                hasError = true;
-                                break;
-                            }
-                            if (data.a) {
-                                rawText += data.a;
-                                // Live preview: show raw text while streaming
-                                aiMsg.innerText = rawText;
-                            }
-                        } catch {}
-                    }
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
-                    if (hasError) break;
-                }
+    function acceptSuggestion() {
+        suggestionChip.style.display = 'none';
+        userInput.value = `Giải thích cho mình hiểu hơn về "${chipConcept}"`;
+        sendMessage(true);
+    }
 
-                // Render Markdown + LaTeX after stream completes
-                if (!hasError && rawText) {
-                    aiMsg.innerHTML = renderMarkdownLatex(rawText);
-                } else if (!hasError) {
-                    aiMsg.innerText = 'Không nhận được phản hồi từ AI.';
-                }
+    // ─── Send message ─────────────────────────────────────────────
+    userInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    sendBtn.addEventListener('click', () => sendMessage());
 
-            } catch (err) {
-                aiMsg.innerHTML = `<span class="error">⚠️ Lỗi kết nối: ${err.message}</span>`;
-            }
-            sendBtn.disabled = false;
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        });
+    async function sendMessage(isProactive = false) {
+        const q = userInput.value.trim();
+        if (!q || sendBtn.disabled) return;
 
-        // Markdown + LaTeX renderer
-        function renderMarkdownLatex(text) {
-            // 1. Protect display math $$...$$ 
-            let i = 0;
-            const blocks = {};
-            text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
-                const key = `%%BLOCK${i++}%%`;
-                try { blocks[key] = katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }); }
-                catch { blocks[key] = `<code>${math}</code>`; }
-                return key;
+        const ts = (video.src && video.readyState > 0) ? video.currentTime : manualTimestamp;
+        const lid = lectureSelect.value;
+        const img = captureFrame();
+
+        // User bubble
+        appendBubble('user', q);
+        userInput.value = '';
+        sendBtn.disabled = true;
+
+        // AI bubble (thinking)
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'msg msg-ai';
+        const thinkSpan = document.createElement('span');
+        thinkSpan.className = 'thinking-indicator';
+        thinkSpan.textContent = '🧠 Thinking';
+        aiMsg.appendChild(thinkSpan);
+        chatHistory.appendChild(aiMsg);
+        scrollBottom();
+
+        let rawText = '', metaData = null, hasError = false;
+
+        try {
+            const resp = await fetch('/api/lectures/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lecture_id: lid, current_timestamp: ts,
+                    question: q, image_base64: img, is_proactive: isProactive
+                })
             });
-            // 2. Protect inline math $...$
-            const inlines = {};
-            text = text.replace(/\$([^$\n]+?)\$/g, (_, math) => {
-                const key = `%%INLINE${i++}%%`;
-                try { inlines[key] = katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
-                catch { inlines[key] = `<code>${math}</code>`; }
-                return key;
-            });
-            // 3. Render Markdown
-            let html = marked.parse(text);
-            // 4. Restore math
-            for (const [k, v] of Object.entries(blocks)) html = html.replace(k, `<div class="katex-display">${v}</div>`);
-            for (const [k, v] of Object.entries(inlines)) html = html.replace(k, v);
-            return html;
+
+            if (!resp.ok) {
+                const errBody = await resp.text();
+                aiMsg.innerHTML = `<span class="error">⚠️ Server error (${resp.status}): ${errBody.slice(0, 200)}</span>`;
+                sendBtn.disabled = false;
+                return;
+            }
+
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                for (const line of decoder.decode(value).split('\n')) {
+                    if (!line.trim()) continue;
+                    try {
+                        const data = JSON.parse(line.trim());
+                        if (data.e)    { aiMsg.innerHTML = `<span class="error">⚠️ ${escHtml(data.e)}</span>`; hasError = true; break; }
+                        if (data.a)    { rawText += data.a; aiMsg.textContent = rawText; }
+                        if (data.meta) { metaData = data.meta; }
+                    } catch {}
+                }
+                scrollBottom();
+                if (hasError) break;
+            }
+
+            if (!hasError && rawText) {
+                // Render markdown + LaTeX
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = renderMarkdownLatex(rawText);
+                aiMsg.innerHTML = '';
+                aiMsg.appendChild(contentDiv);
+
+                // F1: feedback UI
+                appendFeedback(aiMsg, metaData, ts);
+
+                // F3: track turn
+                conversationTurns.push({ ts, understood: false });
+                checkFollowupHint(ts);
+            } else if (!hasError) {
+                aiMsg.textContent = 'Không nhận được phản hồi từ AI.';
+            }
+        } catch (err) {
+            aiMsg.innerHTML = `<span class="error">⚠️ Lỗi kết nối: ${escHtml(err.message)}</span>`;
         }
+
+        sendBtn.disabled = false;
+        scrollBottom();
+    }
+
+    // ─── F1: Feedback UI ─────────────────────────────────────────
+    function appendFeedback(aiMsg, meta, ts) {
+        if (!meta) return;
+        const historyId = meta.history_id;
+
+        const fb = document.createElement('div');
+        fb.className = 'msg-feedback';
+
+        // Source badge
+        if (meta.source_citation) {
+            const badge = document.createElement('div');
+            badge.className = 'source-badge';
+            badge.textContent = `📍 Nguồn: ${meta.source_citation}`;
+            fb.appendChild(badge);
+        }
+
+        // Low-confidence warning
+        if (meta.confidence_score !== undefined && meta.confidence_score < 0.8) {
+            const warn = document.createElement('div');
+            warn.className = 'confidence-warning';
+            warn.textContent = '⚠️ AI trả lời dựa trên kiến thức chung — nội dung này có thể không có trong tài liệu bài học';
+            fb.appendChild(warn);
+        }
+
+        // Buttons
+        const btnRow = document.createElement('div');
+        btnRow.className = 'feedback-btns';
+
+        const btnOk = document.createElement('button');
+        btnOk.className = 'btn-sm btn-understood';
+        btnOk.textContent = '✅ Đã hiểu';
+        btnOk.onclick = () => {
+            sendSignal(historyId, 'understood');
+            btnOk.classList.add('done');
+            btnOk.textContent = '✅ Đã đánh dấu';
+            btnOk.onclick = null;
+            // F3: mark resolved
+            const turn = conversationTurns.slice().reverse().find(t => Math.abs(t.ts - ts) < 1);
+            if (turn) turn.understood = true;
+        };
+
+        const btnReport = document.createElement('button');
+        btnReport.className = 'btn-sm btn-report';
+        btnReport.textContent = '❌ Báo sai';
+
+        // Inline correction form
+        const corrForm = document.createElement('div');
+        corrForm.className = 'correction-form';
+        const corrTextarea = document.createElement('textarea');
+        corrTextarea.rows = 2;
+        corrTextarea.placeholder = 'Câu trả lời đúng là gì?';
+        const corrSubmit = document.createElement('button');
+        corrSubmit.className = 'btn-submit-correction';
+        corrSubmit.textContent = 'Gửi báo cáo';
+        corrSubmit.onclick = () => {
+            const txt = corrTextarea.value.trim();
+            if (!txt) return;
+            sendSignal(historyId, 'reported', txt);
+            corrSubmit.textContent = '✅ Đã gửi';
+            corrSubmit.disabled = true;
+            corrTextarea.disabled = true;
+        };
+        corrForm.appendChild(corrTextarea);
+        corrForm.appendChild(corrSubmit);
+
+        btnReport.onclick = () => corrForm.classList.toggle('open');
+
+        btnRow.appendChild(btnOk);
+        btnRow.appendChild(btnReport);
+        fb.appendChild(btnRow);
+        fb.appendChild(corrForm);
+        aiMsg.appendChild(fb);
+    }
+
+    async function sendSignal(historyId, status, correction = null) {
+        if (!historyId) return;
+        try {
+            await fetch('/api/lectures/signal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ history_id: historyId, status, correction_exact: correction })
+            });
+        } catch {}
+    }
+
+    // ─── F3: Follow-up hint ───────────────────────────────────────
+    function checkFollowupHint(ts) {
+        const WINDOW = 300; // 5-min zone
+        const zone = conversationTurns.filter(t => Math.abs(t.ts - ts) < WINDOW);
+        const unresolved = zone.filter(t => !t.understood).length;
+        if (unresolved < 3) return;
+
+        const hint = document.createElement('div');
+        hint.className = 'msg-followup';
+        const rewindTs = Math.max(0, Math.round(ts) - 30);
+        hint.innerHTML = `📌 Bạn đã hỏi khá nhiều về phần này. Muốn xem lại video không? `
+            + `<a onclick="seekTo(${rewindTs}); video.play();">▶ Xem lại từ ${formatTime(rewindTs)}</a>`;
+        chatHistory.appendChild(hint);
+
+        // Reset zone to avoid repeated hints
+        zone.forEach(t => { t.understood = true; });
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────
+    function appendBubble(type, text) {
+        const el = document.createElement('div');
+        el.className = type === 'user' ? 'msg msg-user' : 'msg msg-ai';
+        el.textContent = text;
+        chatHistory.appendChild(el);
+        scrollBottom();
+        return el;
+    }
+
+    function scrollBottom() { chatHistory.scrollTop = chatHistory.scrollHeight; }
+
+    function captureFrame() {
+        if (!video.src || video.videoWidth === 0) return null;
+        try {
+            const c = document.createElement('canvas');
+            c.width = video.videoWidth; c.height = video.videoHeight;
+            c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+            return c.toDataURL('image/jpeg', 0.7).split(',')[1];
+        } catch { return null; }
+    }
+
+    function formatTime(sec) {
+        sec = Math.floor(sec || 0);
+        return [Math.floor(sec/3600), Math.floor((sec%3600)/60), sec%60]
+            .map(n => String(n).padStart(2,'0')).join(':');
+    }
+
+    function parseTime(str) {
+        const parts = str.split(':').map(Number);
+        if (parts.some(isNaN)) return null;
+        if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+        if (parts.length === 2) return parts[0]*60 + parts[1];
+        return null;
+    }
+
+    function escHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderMarkdownLatex(text) {
+        let i = 0;
+        const blocks = {}, inlines = {};
+        text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
+            const k = `%%B${i++}%%`;
+            try { blocks[k] = katex.renderToString(m.trim(), { displayMode: true, throwOnError: false }); }
+            catch { blocks[k] = `<code>${escHtml(m)}</code>`; }
+            return k;
+        });
+        text = text.replace(/\$([^$\n]+?)\$/g, (_, m) => {
+            const k = `%%I${i++}%%`;
+            try { inlines[k] = katex.renderToString(m.trim(), { displayMode: false, throwOnError: false }); }
+            catch { inlines[k] = `<code>${escHtml(m)}</code>`; }
+            return k;
+        });
+        let html = marked.parse(text);
+        for (const [k,v] of Object.entries(blocks))  html = html.replace(k, `<div class="katex-display">${v}</div>`);
+        for (const [k,v] of Object.entries(inlines)) html = html.replace(k, v);
+        return html;
+    }
     </script>
 </body>
 </html>

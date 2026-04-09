@@ -1,80 +1,248 @@
-# 🎓 AI Tutor: Real-time Multi-modal Learning Platform
+# 🎓 AI Tutor — Hướng dẫn chạy dự án
 
-Hệ thống hỗ trợ học tập cá nhân hóa sử dụng AI để giải đáp thắc mắc của học viên trực tiếp dựa trên ngữ cảnh bài giảng đa phương thức (Video Frame + Transcript + ToC).
-
-## 🚀 Tính năng nổi bật
-
-- **⚡ Real-time Streaming**: Phản hồi tức thì từng chữ, tích hợp hiệu ứng "🧠 Thinking" chân thực.
-- **📸 Multi-modal Context**: Tự động chụp ảnh slide bài giảng tại thời điểm hỏi để AI phân tích trực quan.
-- **🕒 HH:MM:SS Precision**: Mọi mốc thời gian trong ngữ cảnh và câu trả lời đều được chuẩn hóa dạng `Giờ:Phút:Giây`.
-- **🗂️ Auto-Sanitized ToC**: Hệ thống tự động làm sạch tiêu đề bài giảng (ví dụ: `Lecture 1: Introduction`) giúp danh sách chọn lựa luôn gọn gàng.
-- **📐 Math & LaTeX**: Hiển thị công thức toán học/Deep Learning sắc nét qua KaTeX.
-
-## 🐳 Khởi chạy nhanh với Docker (Khuyên dùng)
-
-Dự án đã được Docker hóa hoàn chỉnh, giúp bạn bỏ qua bước cài đặt môi trường phức tạp.
-
-1.  **Thiết lập môi trường**: Tạo file `.env` và điền `GEMINI_API_KEY`.
-2.  **Tải dữ liệu bài giảng**: Tải thư mục `data/` (Video, Transcript, ToC) từ Google Drive của nhóm tại đây: [Link Google Drive của bạn] và giải nén vào thư mục gốc của dự án.
-3.  **Khởi chạy**:
-    ```bash
-    docker compose up -d
-    ```
-3.  **Truy cập**:
-    - **Giao diện chính (HTML/JS)**: `http://localhost:8000`
-    - **Giao diện Lab (Streamlit)**: `http://localhost:8501`
+Nền tảng học tập đa phương thức (Video + Transcript + ToC) với AI giải đáp thắc mắc theo ngữ cảnh bài giảng theo thời gian thực.
 
 ---
 
-## 🛠️ Cài đặt & Khởi chạy thủ công
+## Yêu cầu hệ thống
 
-### 1. Thiết lập môi trường
+| Thành phần | Yêu cầu |
+|---|---|
+| Python | 3.11+ |
+| Package manager | [`uv`](https://docs.astral.sh/uv/) |
+| API Key | Google Gemini API key (miễn phí tại [aistudio.google.com](https://aistudio.google.com/apikey)) |
+
+---
+
+## Cài đặt nhanh
+
+### Bước 1 — Clone & cài thư viện
+
 ```bash
+git clone <repo-url>
+cd Day06-AI-Product-Hackathon
+
 uv venv .venv
-source .venv/bin/activate  # Hoặc activate.fish / activate.ps1
+source .venv/bin/activate      # Linux / macOS
+# hoặc: .venv\Scripts\activate  # Windows CMD
+# hoặc: .venv\Scripts\Activate.ps1  # Windows PowerShell
+
 uv sync
 ```
 
-### 2. Cấu hình .env
+### Bước 2 — Tạo file `.env`
+
+Tạo file `.env` ở thư mục gốc:
+
 ```env
-GEMINI_API_KEY=AIza...
-DEFAULT_MODEL=gemini-3-flash-preview
+GEMINI_API_KEY=AIza...your_key_here...
+DEFAULT_MODEL=gemini-2.0-flash
 ```
 
-### 3. Tạo cấu trúc thư mục data
-Do thư mục `data` đã được cấu hình trong `.gitignore`, máy khác sẽ không có các thư mục này. Bạn cần chạy lệnh sau để tạo sẵn cấu trúc thư mục trống chuẩn bị cho bước Ingestion:
+> Lấy API key miễn phí tại: https://aistudio.google.com/apikey  
+> `DEFAULT_MODEL` có thể để mặc định là `gemini-2.0-flash`.
 
-**Sử dụng Bash (Linux/macOS/Git Bash):**
+### Bước 3 — Chuẩn bị dữ liệu bài giảng
+
+Tạo cấu trúc thư mục `data/`:
+
 ```bash
-mkdir -p data/cs224n data/cs231n/slides data/cs231n/ToC_Summary data/cs231n/transcripts data/cs231n/videos
+mkdir -p data/cs231n/videos data/cs231n/transcripts data/cs231n/ToC_Summary
 ```
 
-**Sử dụng Python (đa nền tảng):**
-```bash
-python -c "import os; [os.makedirs(d, exist_ok=True) for d in ['data/cs224n', 'data/cs231n/slides', 'data/cs231n/ToC_Summary', 'data/cs231n/transcripts', 'data/cs231n/videos']]"
+Sau đó chép file vào đúng thư mục:
+
+| Loại file | Đặt vào |
+|---|---|
+| Video bài giảng (`.mp4`) | `data/cs231n/videos/` |
+| Transcript (`.txt`) | `data/cs231n/transcripts/` |
+| ToC Summary (`.json`) | `data/cs231n/ToC_Summary/` |
+
+**Định dạng transcript** — mỗi dòng theo cú pháp:
+```
+[HH:MM:SS] Nội dung lời giảng ở đây
 ```
 
-*Lưu ý: Sau khi tạo cấu trúc xong, bạn hãy chép thủ công các file Video, Transcript, và ToC vào đúng thư mục tương ứng.*
+**Định dạng ToC JSON** — ví dụ:
+```json
+{
+  "lecture_id": "cs231n_lecture1",
+  "title": "Introduction to CNNs",
+  "table_of_contents": [
+    { "title": "Motivation", "start_time": "00:00:00", "summary": "..." },
+    { "title": "History of Vision", "start_time": "00:05:30", "summary": "..." }
+  ]
+}
+```
 
-### 4. Nạp dữ liệu (Ingestion)
-Để nạp dữ liệu bài giảng CS231N vào hệ thống (sau khi đã chép file vào thư mục data):
+### Bước 4 — Nạp dữ liệu vào database
+
 ```bash
 PYTHONPATH=. uv run python scripts/ingest_cs231n.py
 ```
 
-### 5. Khởi chạy Backend
+Lệnh này scan toàn bộ `data/cs231n/` và ghi vào `app.db` (SQLite, tự động tạo).
+
+### Bước 5 — Khởi chạy server
+
 ```bash
 PYTHONPATH=. uv run python src/api/app.py
 ```
 
+Truy cập tại:
+- **Giao diện chính:** http://localhost:8000
+- **Admin Dashboard:** http://localhost:8000/admin
+- **Streamlit Lab (optional):** chạy riêng — xem phần cuối
+
 ---
 
-## 📂 Cấu trúc thư mục quan trọng
-- `src/`: Mã nguồn chính (API, Models, Services).
-- `data/cs231n/`: Chứa Video, Transcript và ToC JSON.
-- `prompts/`: Chứa các mẫu prompt tối ưu để trích xuất dữ liệu bài giảng.
-- `app.db`: Database SQLite (Tự động khởi tạo khi chạy Docker/API).
-- `logs/`: Lịch sử câu hỏi dưới dạng JSON.
+## Khởi chạy với Docker (khuyên dùng cho demo)
 
-## 🧪 Tài liệu bổ sung
-- Sử dụng prompt trong `prompts/lecture_extraction_prompt.txt` để trích xuất summary bài giảng mới đạt độ chính xác cao nhất.
+```bash
+# 1. Tạo .env (xem Bước 2 ở trên)
+# 2. Đặt data vào thư mục data/
+
+docker compose up -d
+```
+
+| URL | Mô tả |
+|---|---|
+| http://localhost:8000 | Giao diện chính |
+| http://localhost:8000/admin | Admin dashboard |
+| http://localhost:8501 | Streamlit lab UI |
+
+---
+
+## Các trang trong ứng dụng
+
+### `/` — Giao diện học tập chính
+
+Gồm 3 luồng chính đã implement:
+
+**F1 — Hỏi & nhận giải thích theo ngữ cảnh**
+1. Chọn bài giảng từ dropdown
+2. Xem video — timestamp tự đồng bộ theo video đang chạy
+3. Gõ câu hỏi vào ô chat → nhấn **Enter** hoặc **Hỏi Gia sư**
+4. AI stream câu trả lời, hiển thị:
+   - 📍 Badge nguồn (chapter / timestamp)
+   - ⚠️ Cảnh báo vàng nếu AI không tìm thấy trong tài liệu (confidence thấp)
+   - ✅ **Đã hiểu** — ghi nhận learning signal
+   - ❌ **Báo sai** → nhập câu đúng → gửi correction log
+
+**F2 — Gợi ý chủ động**
+- Video **pause > 3 giây** → chip gợi ý hiện ra góc phải màn hình
+- Nhấn **Có** → AI tự giải thích chapter đang xem
+- Nhấn **✕** → bỏ qua (sau 3 lần bỏ qua, chip tắt trong session)
+
+**F3 — Hội thoại tiếp nối**
+- Sau **3+ câu hỏi chưa "Đã hiểu"** trong cùng vùng thời gian → gợi ý xem lại video
+- Click link timestamp → video tự seek và play
+
+### `/admin` — Admin Dashboard
+
+Hiển thị 3 metric theo threshold từ spec:
+
+| Metric | Mục tiêu | Ngưỡng đỏ |
+|---|---|---|
+| Tỷ lệ Đã hiểu | ≥ 75% | < 50% |
+| Tỷ lệ Báo sai | ≤ 5% | > 15% |
+| Latency P95 | ≤ 2.0s | > 4.0s |
+
+Kèm bảng **Correction Log** — toàn bộ câu hỏi học sinh báo sai + nội dung sửa đúng.
+
+---
+
+## Cấu trúc thư mục
+
+```
+Day06-AI-Product-Hackathon/
+├── src/
+│   ├── api/
+│   │   ├── app.py            # FastAPI — tất cả endpoints
+│   │   ├── auth.py           # JWT authentication
+│   │   └── static/
+│   │       ├── index.html    # Giao diện học tập chính (F1/F2/F3)
+│   │       ├── admin.html    # Admin dashboard
+│   │       └── login.html    # Trang đăng nhập (optional)
+│   ├── services/
+│   │   ├── llm_service.py    # RAG context + Gemini streaming
+│   │   └── ingestion.py      # Parse ToC JSON + transcript
+│   ├── models/
+│   │   └── store.py          # SQLAlchemy models (SQLite / PostgreSQL)
+│   ├── ui/
+│   │   └── app.py            # Streamlit lab UI (alternative)
+│   └── config.py             # Load biến môi trường
+├── scripts/
+│   └── ingest_cs231n.py      # Script nạp dữ liệu
+├── data/                     # Gitignored — đặt video/transcript/ToC ở đây
+├── logs/
+│   └── qa_history.log        # Log JSON mọi Q&A
+├── app.db                    # SQLite database (tự tạo)
+├── .env                      # API keys (không commit)
+├── requirements.txt
+└── how-to-run.md
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| `GET` | `/api/lectures` | Danh sách bài giảng |
+| `GET` | `/api/lectures/{id}/toc` | Table of Contents |
+| `POST` | `/api/lectures/ask` | Hỏi AI (streaming SSE) |
+| `POST` | `/api/lectures/signal` | Gửi feedback (đã hiểu / báo sai) |
+| `GET` | `/api/admin/metrics` | Số liệu dashboard |
+| `GET` | `/api/history` | Lịch sử Q&A (cần login) |
+
+**Body của `/api/lectures/ask`:**
+```json
+{
+  "lecture_id": "cs231n_lecture1",
+  "current_timestamp": 125.5,
+  "question": "Gradient descent là gì?",
+  "image_base64": null,
+  "is_proactive": false
+}
+```
+
+**Body của `/api/lectures/signal`:**
+```json
+{
+  "history_id": 42,
+  "status": "understood",
+  "correction_exact": null
+}
+```
+
+---
+
+## Chạy Streamlit Lab UI (tùy chọn)
+
+Giao diện debug/lab thay thế:
+
+```bash
+PYTHONPATH=. uv run streamlit run src/ui/app.py
+```
+
+Truy cập: http://localhost:8501
+
+---
+
+## Xử lý lỗi thường gặp
+
+**`ModuleNotFoundError: No module named 'src'`**
+→ Thiếu `PYTHONPATH=.` — thêm vào đầu lệnh.
+
+**`GEMINI_API_KEY not set`**
+→ Kiểm tra file `.env` ở thư mục gốc, không phải trong `src/`.
+
+**Video không phát được**
+→ Kiểm tra `video_url` trong DB. Nếu dùng đường dẫn local, đảm bảo file đặt trong `data/` và server đang chạy.
+
+**Không có bài giảng nào trong dropdown**
+→ Chưa chạy ingestion script. Chạy lại `scripts/ingest_cs231n.py`.
+
+**`app.db` cũ thiếu cột mới**
+→ Server tự migrate khi khởi động. Nếu vẫn lỗi, xóa `app.db` và restart (data sẽ mất, cần ingest lại).
