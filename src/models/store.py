@@ -83,6 +83,7 @@ class QAHistory(Base):
     status = Column(String, default="pending")  # pending | understood | reported
     correction_text = Column(Text, nullable=True)  # Filled when status='reported'
     latency_ms = Column(Integer, nullable=True)  # Time from request to stream complete
+    confidence_score = Column(Float, nullable=True)  # 0.0–1.0; <0.8 triggers low-confidence banner
     is_proactive = Column(Boolean, default=False)  # From proactive suggestion chip?
     
     user = relationship("User", back_populates="qa_history")
