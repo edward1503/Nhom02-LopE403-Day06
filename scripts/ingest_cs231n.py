@@ -20,12 +20,19 @@ def extract_youtube_id(transcript_path):
                 break
     return None
 
+# Google Drive File IDs for each lecture video
+# Get from: https://drive.google.com/file/d/{FILE_ID}/view → copy FILE_ID
+DRIVE_FILE_IDS = {
+    1: os.getenv("LECTURE_1_DRIVE_ID", ""),
+    # Add more: 2: "xxx", 3: "yyy", ...
+}
+
 def main():
     base_dir = "data/cs231n"
     toc_dir = os.path.join(base_dir, "ToC_Summary")
     transcript_dir = os.path.join(base_dir, "transcripts")
     video_dir = os.path.join(base_dir, "videos")
-    
+
     # Loop through lecture numbers 1 to 18
     for n in range(1, 2):
         lecture_id = f"lecture-{n}"
@@ -81,8 +88,11 @@ def main():
         print(f"  Video: {video_path}")
         
         youtube_id = extract_youtube_id(transcript_path)
+        drive_file_id = DRIVE_FILE_IDS.get(n, "") or None
         if youtube_id:
             print(f"  YouTube ID: {youtube_id}")
+        if drive_file_id:
+            print(f"  Drive File ID: {drive_file_id}")
 
         try:
             ingest_lecture(
@@ -90,7 +100,8 @@ def main():
                 toc_path=toc_path,
                 transcript_paths=transcript_paths,
                 video_filename=video_rel_path,
-                youtube_id=youtube_id
+                youtube_id=youtube_id,
+                drive_file_id=drive_file_id
             )
         except Exception as e:
             print(f"FAILED to ingest {lecture_id}: {e}")

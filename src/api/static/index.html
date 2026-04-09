@@ -34,7 +34,11 @@
         .container { display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem; padding: 0.75rem; flex: 1; overflow: hidden; }
         .video-section { background: var(--card); border-radius: 12px; padding: 0.75rem; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
         video { width: 100%; border-radius: 8px; }
-        .video-info { display: flex; justify-content: space-between; color: var(--dim); font-size: 0.85rem; }
+        iframe.drive-player { width: 100%; aspect-ratio: 16/9; border: 0; border-radius: 8px; }
+        .video-info { display: flex; justify-content: space-between; align-items: center; color: var(--dim); font-size: 0.85rem; }
+        .timestamp-control { display: flex; align-items: center; gap: 0.5rem; }
+        .timestamp-control input[type="range"] { width: 120px; accent-color: var(--accent); }
+        .timestamp-control input[type="text"] { width: 70px; background: var(--bg); border: 1px solid var(--border); color: white; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem; text-align: center; font-family: monospace; }
 
         .chat-section { display: flex; flex-direction: column; background: var(--card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
         .chat-history { flex: 1; padding: 0.75rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; }
@@ -90,10 +94,18 @@
 
     <div class="container">
         <div class="video-section">
-            <video id="mainVideo" controls></video>
+            <div id="videoContainer">
+                <video id="mainVideo" controls style="display:none;"></video>
+                <iframe id="drivePlayer" class="drive-player" style="display:none;" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <div id="noVideoMsg" style="display:flex; align-items:center; justify-content:center; aspect-ratio:16/9; color:var(--dim); font-size:0.9rem;">Chọn bài giảng để xem video</div>
+            </div>
             <div class="video-info">
                 <span id="videoTitle">Chọn bài giảng...</span>
-                <span id="currentTime">00:00:00</span>
+                <div class="timestamp-control">
+                    <span>Timestamp:</span>
+                    <input type="range" id="timestampSlider" min="0" max="3600" value="0" step="1">
+                    <input type="text" id="timestampInput" value="00:00:00" title="Nhập thời gian (HH:MM:SS)">
+                </div>
             </div>
         </div>
 
@@ -110,12 +122,17 @@
 
     <script>
         const video = document.getElementById('mainVideo');
+        const drivePlayer = document.getElementById('drivePlayer');
+        const noVideoMsg = document.getElementById('noVideoMsg');
         const lectureSelect = document.getElementById('lectureSelect');
         const chatHistory = document.getElementById('chatHistory');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
-        const timeDisplay = document.getElementById('currentTime');
+        const timestampSlider = document.getElementById('timestampSlider');
+        const timestampInput = document.getElementById('timestampInput');
         let lectures = [];
+        let currentVideoMode = 'none'; // 'local' | 'drive' | 'none'
+        let manualTimestamp = 0;
 
         // Load lectures
         fetch('/api/lectures').then(r => r.json()).then(data => {
@@ -126,18 +143,76 @@
 
         function selectLecture(id) {
             const lec = lectures.find(l => l.id === id);
-            if (lec) {
+            if (!lec) return;
+            document.getElementById('videoTitle').innerText = lec.title;
+
+            // Hide all video elements first
+            video.style.display = 'none';
+            drivePlayer.style.display = 'none';
+            noVideoMsg.style.display = 'none';
+
+            if (lec.drive_file_id) {
+                // Google Drive embed
+                drivePlayer.src = `https://drive.google.com/file/d/${lec.drive_file_id}/preview`;
+                drivePlayer.style.display = 'block';
+                currentVideoMode = 'drive';
+            } else if (lec.youtube_id) {
+                // YouTube embed
+                drivePlayer.src = `https://www.youtube.com/embed/${lec.youtube_id}?rel=0`;
+                drivePlayer.style.display = 'block';
+                currentVideoMode = 'youtube';
+            } else if (lec.video_url) {
+                // Local video file
                 video.src = `/${lec.video_url}`;
-                document.getElementById('videoTitle').innerText = lec.title;
+                video.style.display = 'block';
                 video.load();
+                currentVideoMode = 'local';
+            } else {
+                noVideoMsg.style.display = 'flex';
+                currentVideoMode = 'none';
             }
         }
         lectureSelect.addEventListener('change', e => selectLecture(e.target.value));
+
+        // Timestamp tracking: local video auto-updates, drive uses manual slider
         video.addEventListener('timeupdate', () => {
-            timeDisplay.innerText = new Date(video.currentTime * 1000).toISOString().substr(11, 8);
+            const sec = Math.floor(video.currentTime);
+            manualTimestamp = sec;
+            timestampSlider.value = sec;
+            timestampInput.value = formatTime(sec);
         });
 
+        timestampSlider.addEventListener('input', () => {
+            manualTimestamp = parseInt(timestampSlider.value);
+            timestampInput.value = formatTime(manualTimestamp);
+            if (currentVideoMode === 'local') video.currentTime = manualTimestamp;
+        });
+
+        timestampInput.addEventListener('change', () => {
+            const sec = parseTime(timestampInput.value);
+            if (sec !== null) {
+                manualTimestamp = sec;
+                timestampSlider.value = sec;
+                if (currentVideoMode === 'local') video.currentTime = sec;
+            }
+        });
+
+        function formatTime(sec) {
+            const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+            const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function parseTime(str) {
+            const parts = str.split(':').map(Number);
+            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            if (parts.length === 2) return parts[0] * 60 + parts[1];
+            return null;
+        }
+
         function captureFrame() {
+            if (currentVideoMode !== 'local') return null;
             try {
                 const c = document.createElement('canvas');
                 c.width = video.videoWidth; c.height = video.videoHeight;
@@ -155,7 +230,7 @@
             const q = userInput.value.trim();
             if (!q) return;
 
-            const ts = video.currentTime;
+            const ts = currentVideoMode === 'local' ? video.currentTime : manualTimestamp;
             const lid = lectureSelect.value;
             const img = captureFrame();
 

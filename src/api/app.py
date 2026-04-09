@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -9,12 +10,14 @@ from src.services.llm_service import get_context_and_stream_gemini
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
     init_db()
     yield
 
 app = FastAPI(title="Lecture Q&A Platform API", lifespan=lifespan)
 
-# Mount data to serve videos
+# Mount data to serve videos (local dev)
 app.mount("/data", StaticFiles(directory="data"), name="data")
 # Mount static files for UI
 app.mount("/static", StaticFiles(directory="src/api/static"), name="static")
@@ -32,7 +35,17 @@ class AskRequest(BaseModel):
 
 @app.get("/api/lectures")
 def list_lectures(db: Session = Depends(get_db)):
-    return db.query(Lecture).all()
+    lectures = db.query(Lecture).all()
+    return [
+        {
+            "id": lec.id,
+            "title": lec.title,
+            "video_url": lec.video_url,
+            "youtube_id": lec.youtube_id,
+            "drive_file_id": lec.drive_file_id,
+        }
+        for lec in lectures
+    ]
 
 @app.get("/api/lectures/{lecture_id}/toc")
 def get_toc(lecture_id: str, db: Session = Depends(get_db)):

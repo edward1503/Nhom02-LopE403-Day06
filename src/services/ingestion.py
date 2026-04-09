@@ -58,7 +58,7 @@ def parse_transcript_text(file_path):
 
     return lines_data
 
-def ingest_lecture(lecture_id, toc_path, transcript_paths, video_filename=None, youtube_id=None):
+def ingest_lecture(lecture_id, toc_path, transcript_paths, video_filename=None, youtube_id=None, drive_file_id=None):
     db = SessionLocal()
     init_db()
 
@@ -75,7 +75,8 @@ def ingest_lecture(lecture_id, toc_path, transcript_paths, video_filename=None, 
             id=lecture_id,
             title=toc_data.get("lecture_title", lecture_id),
             video_url=video_path,
-            youtube_id=youtube_id
+            youtube_id=youtube_id,
+            drive_file_id=drive_file_id
         )
         db.add(lecture)
     else:
@@ -83,6 +84,8 @@ def ingest_lecture(lecture_id, toc_path, transcript_paths, video_filename=None, 
         lecture.video_url = video_path
         if youtube_id:
             lecture.youtube_id = youtube_id
+        if drive_file_id:
+            lecture.drive_file_id = drive_file_id
 
     # Clear existing chapters/lines for re-ingestion
     db.query(Chapter).filter(Chapter.lecture_id == lecture_id).delete()

@@ -18,6 +18,7 @@ class Lecture(Base):
     description = Column(Text, nullable=True)
     video_url = Column(String, nullable=True)
     youtube_id = Column(String, nullable=True)
+    drive_file_id = Column(String, nullable=True)
     duration = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
