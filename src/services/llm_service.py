@@ -18,6 +18,8 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
 qa_logger.addHandler(file_handler)
 
 def get_context_and_stream_gemini(lecture_id, current_timestamp, user_question, image_base64=None, user_id=None):
+    import time
+    request_start = time.time()
     db = SessionLocal()
     
     # 1. Get ToC
@@ -112,7 +114,8 @@ QUY TẮC:
                 full_answer += text
                 yield json.dumps({"a": text}) + "\n"
 
-        # 6. Save to DB
+        # 6. Save to DB with latency
+        latency_ms = int((time.time() - request_start) * 1000)
         history = QAHistory(
             user_id=user_id,
             lecture_id=lecture_id,
@@ -120,10 +123,15 @@ QUY TẮC:
             answer=full_answer,
             thoughts="",
             current_timestamp=current_timestamp,
-            image_base64=image_base64[:500] if image_base64 else None
+            image_base64=image_base64[:500] if image_base64 else None,
+            latency_ms=latency_ms
         )
         db.add(history)
         db.commit()
+        db.refresh(history)
+
+        # Send history_id so frontend can call /signal later
+        yield json.dumps({"history_id": history.id, "latency_ms": latency_ms}) + "\n"
 
         # 7. File Log
         qa_logger.info(json.dumps({

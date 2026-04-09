@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -61,7 +61,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     name = Column(String, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)  # nullable: Clerk users don't have local passwords
     created_at = Column(DateTime, default=datetime.utcnow)
     
     qa_history = relationship("QAHistory", back_populates="user", cascade="all, delete-orphan")
@@ -79,7 +79,23 @@ class QAHistory(Base):
     image_base64 = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Learning signals (spec-final.md §3)
+    status = Column(String, default="pending")  # pending | understood | reported
+    correction_text = Column(Text, nullable=True)  # Filled when status='reported'
+    latency_ms = Column(Integer, nullable=True)  # Time from request to stream complete
+    is_proactive = Column(Boolean, default=False)  # From proactive suggestion chip?
+    
     user = relationship("User", back_populates="qa_history")
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    last_active = Column(DateTime, default=datetime.utcnow)
+    lecture_id = Column(String, nullable=True)  # What lecture they're viewing
+    
+    user = relationship("User")
 
 def init_db():
     Base.metadata.create_all(bind=engine)

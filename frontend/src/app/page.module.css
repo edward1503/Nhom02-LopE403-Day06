@@ -1,0 +1,251 @@
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: var(--dim);
+}
+
+.pageWrap {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.header {
+  padding: 0.75rem 1.5rem;
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.lectureSelect {
+  background: var(--card);
+  color: white;
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--dim);
+  font-size: 0.85rem;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.videoSection {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.videoContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: black;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.videoPlayer {
+  width: 100%;
+  max-height: 100%;
+}
+
+.noVideoMsg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16/9;
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+.videoInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--dim);
+  font-size: 0.85rem;
+}
+
+.chatSection {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.chatHistory {
+  flex: 1;
+  padding: 0.75rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.msg {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  max-width: 92%;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.msgUser {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #0f172a;
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+.msgAi {
+  align-self: flex-start;
+  background: #334155;
+  width: 95%;
+}
+
+.msgAi :global(h1),
+.msgAi :global(h2),
+.msgAi :global(h3),
+.msgAi :global(h4) {
+  margin: 0.5em 0 0.3em;
+  color: var(--accent);
+}
+
+.msgAi :global(h3) {
+  font-size: 1rem;
+}
+
+.msgAi :global(p) {
+  margin: 0.3em 0;
+}
+
+.msgAi :global(ul),
+.msgAi :global(ol) {
+  margin: 0.3em 0 0.3em 1.2em;
+}
+
+.msgAi :global(li) {
+  margin: 0.15em 0;
+}
+
+.msgAi :global(code) {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.msgAi :global(pre) {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.6em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.4em 0;
+}
+
+.msgAi :global(pre code) {
+  background: none;
+  padding: 0;
+}
+
+.msgAi :global(blockquote) {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.6em;
+  margin: 0.4em 0;
+  color: var(--dim);
+}
+
+.msgAi :global(strong) {
+  color: var(--accent);
+}
+
+.msgAi :global(.katex) {
+  font-size: 1em;
+}
+
+.msgAi :global(.katex-display) {
+  margin: 0.5em 0;
+  overflow-x: auto;
+}
+
+.chatInputParams {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.chatInputParams textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: white;
+  padding: 0.6rem;
+  border-radius: 8px;
+  resize: none;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.chatInputParams textarea:focus {
+  border-color: var(--accent);
+}
+
+.chatInputParams button {
+  margin-top: 0.5rem;
+  width: 100%;
+  background: var(--accent);
+  color: #0f172a;
+  border: none;
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.chatInputParams button:hover {
+  opacity: 0.85;
+}
+
+.chatInputParams button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
