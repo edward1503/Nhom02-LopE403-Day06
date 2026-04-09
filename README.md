@@ -1,395 +1,108 @@
-# Ngày 6 — Hackathon: SPEC → Prototype → Demo
+# 🎓 AI Tutor Overlay (VinSchool): Real-time Multi-modal Learning Platform
 
-> Không có lecture mới. Hôm nay = chứng minh. SPEC là hypothesis, Prototype là evidence, Demo là convince.
+**Nhóm:** Nhom02-403 | **Track:** VinUni-VinSchool | **Giai đoạn:** Mock Prototype (Hackathon Day 6)
+
+Hệ thống hỗ trợ học tập cá nhân hóa sử dụng AI để giải đáp thắc mắc của học viên trực tiếp dựa trên ngữ cảnh bài giảng đa phương thức (Video Frame + Transcript + ToC).
 
 ---
 
-## Tổng quan
+## 📌 1. Tóm tắt dự án (Problem & Solution)
+**Vấn đề (Pain point):** Sinh viên học online thường xuyên bị gián đoạn tư duy khi phải chuyển tab sang các công cụ tìm kiếm hoặc AI khác để giải đáp thắc mắc trong bài giảng (slide/video). Việc này khiến luồng học tập (flow) bị đứt gãy.
 
-```text
-SÁNG (9:00-13:00)              CHIỀU (14:00-16:00)            DEMO DAY (16:00-18:00)
-┌────────────────────┐        ┌────────────────────┐         ┌────────────────────┐
-│   BUILD PROTOTYPE   │        │   POLISH + PREP     │         │  GALLERY WALK +     │
-│                     │        │                     │         │  DEMO ROUND         │
-│  M1: Canvas check   │        │  Polish prototype    │         │  60 phút             │
-│  Build              │   →    │  Viết demo script    │    →    ├────────────────────┤
-│  M2: Show 1 thứ     │        │  M4: Dry run + setup │         │  TOP TEAMS PRESENT  │
-│  Build tiếp         │        │                     │         │  + TRAO GIẢI         │
-│  M3: SPEC final     │        │                     │         │                     │
-└────────────────────┘        └────────────────────┘         └────────────────────┘
+**Giải pháp (Solution):** **AI Tutor Overlay** là một chatbot được nhúng trực tiếp lên trên giao diện nền tảng học tập online. Hệ thống có khả năng ngầm hiểu các nội dung đang hiển thị trên màn hình (thông qua slide PDF hoặc Video Transcript định dạng đa phương thức) và giải thích các khái niệm ngay tại chỗ trong thời gian siêu nhanh (dưới 2 giây).
+
+## ✨ 2. Các Tính Năng Nổi Bật (User Stories)
+1. **Giải thích khái niệm theo ngữ cảnh (Context-aware Explanation):** 
+   - Kích hoạt khi sinh viên bôi đen hoặc hỏi một thuật ngữ từ slide/video.
+   - Trích xuất ảnh báo cáo trực quan tự động (Video Frame/Slide) tại thời điểm hỏi để mô hình phân tích.
+   - Mọi mốc thời gian đều chuẩn hóa dạng `Giờ:Phút:Giây` và đi kèm quy chiếu **Badge tính điểm tín nhiệm (Nguồn tham khảo)** để dễ dàng kiểm chứng.
+2. **Gợi ý chủ động khi học (Proactive AI Suggestion):** 
+   - Kích hoạt tự động khi sinh viên dừng (pause) video > 3 giây hoặc di chuột (hover) vào thuật ngữ lạ.
+   - Một chip nhỏ sẽ gợi ý: *"Bạn muốn hiểu rõ hơn về '[khái niệm]' không?"*. Sinh viên có thể bỏ qua hoặc xem ngay giải thích.
+3. **Trải nghiệm Streaming Siêu thực (Real-time Feedback):**
+   - Phản hồi tức thì từng chữ, tích hợp hiệu ứng "🧠 Thinking" chân thực của mô hình.
+   - Hệ thống tự động làm sạch danh sách ToC để dễ theo dõi và hiển thị công thức toán học/Deep Learning sắc nét qua MathJax/KaTeX.
+
+## 🛠 3. Công nghệ sử dụng
+- **AI Model:** Google Gemini 2.0 Flash (API) - Lựa chọn hàng đầu nhờ xử lý đa phương thức (multimodal text+image), tốc độ trả lời siêu tốc (latency ~1-1.5s), cực kỳ phù hợp ở quy mô phần mềm MVP. 
+- **Backend & Data Pipeline:** Backend sử dụng Python (FastAPI). Hệ thống tự động xử lý Context Retrieval và có Ingestion Pipeline làm sạch văn bản mẫu định tuyến cho các môn học như CS231n để Agent "hiểu" trọn bộ kiến thức khóa học.
+- **Frontend / Prototyping:** Giao diện được khởi tạo từ Lovable kết hợp Javascript thuần Vanilla để xử lý Streaming Data trả về từ Server-Sent Events. Việc tách rời này giúp dễ dàng nhúng mã vào web có sẵn, đồng thời ứng dụng `PDF.js` để đọc slide trực tiếp mà không cần Backend render.
+
+## 📊 4. Product Specs, Failure Modes & ROI
+- **Metrics Chính:** Khác AI thông thường, hệ thống ưu tiên **Precision thay vì Recall**. Tỷ lệ "Đã hiểu" mục tiêu `≥ 75%`. Tốc độ phản hồi ưu tiên P95 `≤ 2.0s` nhằm giữ luồng tư duy. Tỷ lệ suy diễn bậy (Hallucination) `≤ 5%`.
+- **Top Failure Modes (Trường hợp Lỗi & Khắc phục):** 
+  - *Ngữ cảnh rỗng:* Hệ thống hiển thị cảnh báo và khuyên user cẩn trọng vì video chưa có transcript gốc.
+  - *Hallucination:* Khóa AI vào context bằng chặt chẽ với logic RAG ngầm của hệ backend.
+  - *Gợi ý rác (Proactive Spam):* Giải quyết bằng giới hạn Rate Limit (Tối đa 2 lần chủ động gợi ý / 10 phút) và ngủ đông sau 3 lần user ấn Dismiss.
+- **ROI kì vọng:** Vận hành cực rẻ (~ $0.25 cho 50 queries/ngày), giảm đáng kể rủi ro Context Switching. Đặc biệt sở hữu khả năng đóng gói Scale lên toàn hệ thống Edu nội bộ rất lớn.
+
+---
+
+## 🐳 Khởi chạy nhanh với Docker (Khuyên dùng)
+
+Dự án đã được Docker hóa hoàn chỉnh, giúp bạn bỏ qua bước cài đặt môi trường phức tạp.
+
+1.  **Thiết lập môi trường**: Tạo file `.env` và điền `GEMINI_API_KEY`.
+2.  **Tải dữ liệu bài giảng**: Tải thư mục `data/` (Video, Transcript, ToC) từ Google Drive của nhóm tại đây: [Link Google Drive của bạn] và giải nén vào thư mục gốc của dự án.
+3.  **Khởi chạy**:
+    ```bash
+    docker compose up -d
+    ```
+4.  **Truy cập**:
+    - **Giao diện chính (HTML/JS)**: `http://localhost:8000`
+    - **Giao diện Lab (Streamlit)**: `http://localhost:8501`
+
+---
+
+## 🛠️ Cài đặt & Khởi chạy thủ công
+
+### 1. Thiết lập môi trường
+```bash
+uv venv .venv
+source .venv/bin/activate  # Hoặc activate.fish / activate.ps1
+uv sync
+```
+
+### 2. Cấu hình .env
+```env
+GEMINI_API_KEY=AIza...
+DEFAULT_MODEL=gemini-3-flash-preview
+```
+
+### 3. Tạo cấu trúc thư mục data
+Do thư mục `data` đã được cấu hình trong `.gitignore`, máy khác sẽ không có các thư mục này. Bạn cần chạy lệnh sau để tạo sẵn cấu trúc thư mục trống chuẩn bị cho bước Ingestion:
+
+**Sử dụng Bash (Linux/macOS/Git Bash):**
+```bash
+mkdir -p data/cs224n data/cs231n/slides data/cs231n/ToC_Summary data/cs231n/transcripts data/cs231n/videos
+```
+
+**Sử dụng Python (đa nền tảng):**
+```bash
+python -c "import os; [os.makedirs(d, exist_ok=True) for d in ['data/cs224n', 'data/cs231n/slides', 'data/cs231n/ToC_Summary', 'data/cs231n/transcripts', 'data/cs231n/videos']]"
+```
+
+*Lưu ý: Sau khi tạo cấu trúc xong, bạn hãy chép thủ công các file Video, Transcript, và ToC vào đúng thư mục tương ứng.*
+
+### 4. Nạp dữ liệu (Ingestion)
+Để nạp dữ liệu bài giảng CS231N vào hệ thống (sau khi đã chép file vào thư mục data):
+```bash
+PYTHONPATH=. uv run python scripts/ingest_cs231n.py
+```
+
+### 5. Khởi chạy Backend
+```bash
+PYTHONPATH=. uv run python src/api/app.py
 ```
 
 ---
 
-## Timeline
-
-| Giờ | Milestone | Nội dung | Ghi chú |
-|-----|-----------|----------|---------|
-| 9:00 | **M1** | Canvas check + SPEC draft review | Chưa có Canvas → bổ sung trước 9:30 |
-| 9:15 | | **Build Prototype** | GV đi vòng: "Đang build gì? Stuck ở đâu?" |
-| 11:00 | **M2** | **"Show ít nhất mock prototype"** — GV check từng nhóm | Chưa có → simplify scope / dùng tool mock nhanh |
-| 11:15 | | Build tiếp | |
-| 13:00 | **M3** | **SPEC final + demo flow draft** | Trước nghỉ trưa — chiều chỉ polish |
-| 13:00–14:00 | | Nghỉ trưa | |
-| 14:00 | | Polish + chuẩn bị demo | 15:00: "1h nữa Demo. Freeze code, focus narrative." |
-| 15:30 | **M4** | Demo prep done + dry run | Mỗi nhóm 1 bàn: laptop + poster/slides |
-| **16:00** | **M5** | **Gallery walk + demo round (60 phút)** | 2-3 ở lại trình bày + 2-3 đi xem + feedback form |
-| **17:00** | **M6** | **Top teams present + trao giải + closing** | |
-
----
-
-## Deliverables
-
-| # | Deliverable | Loại | Deadline |
-|---|-------------|------|----------|
-| 1 | **SPEC final** — Canvas + 6 phần đầy đủ | Nhóm | 23:59 09/04/2026 |
-| 2 | **Prototype** — link/file + mô tả + supported links | Nhóm | 23:59 09/04/2026 |
-| 3 | **Demo** — poster/slides | Nhóm | 23:59 09/04/2026 |
-| 4 | **Feedback** — đánh giá các team khác trong zone | Cá nhân | 23:59 09/04/2026 |
-| 5 | **Reflection** — role + đóng góp + reflection | Cá nhân | 23:59 09/04/2026 |
-
----
-
-## Prototype — 3 levels
-
-| Level | Mô tả | Ví dụ | Điểm |
-|-------|-------|-------|------|
-| **Sketch** | Vẽ/draft flow trên giấy, slides, whiteboard. Chưa build gì. | Vẽ user journey trên giấy: user mở app → nhập triệu chứng → AI gợi ý khoa → user chọn → đặt lịch | Đủ điểm |
-| **Mock prototype** | UI/flow build được (HTML, app) nhưng chưa gắn AI thật. Dùng tools: Claude Artifacts, v0, Figma... | App HTML có form nhập triệu chứng, hiện kết quả mẫu, flow click được — nhưng chưa gọi API AI | **Bonus** |
-| **Working prototype** | Có AI chạy thật. Input → AI xử lý → output. Demo live được. | App gọi Gemini API: user nhập triệu chứng → AI phân tích → trả gợi ý khoa + confidence score | **Bonus ++** |
-
-**Checkpoint M2 (11:00):** mỗi nhóm phải có ít nhất **mock prototype**. Chưa có → simplify scope hoặc dùng tool mock nhanh (Antigravity, Claude, Figma).
-
-**Lưu ý:**
-- Sketch + Mock: vẫn phải có ít nhất 1 prompt/AI call chạy thật kèm theo (chạy riêng, show bên cạnh)
-- Working prototype: dùng vibe-coding tools (Cursor, Claude Code, Replit Agent...) hoàn toàn OK
-- Mọi level: mỗi người giải thích được phần mình làm. Không hiểu = 0 điểm demo cá nhân
-
-Xem chi tiết tools: [`03-tools-guide/prototyping-tools.md`](03-tools-guide/prototyping-tools.md)
-
----
-
-## SPEC — 6 phần
-
-Dùng template: [`02-templates/01-spec-template.md`](02-templates/01-spec-template.md)
-
-| # | Phần | Yêu cầu |
-|---|------|---------|
-| 1 | **AI Product Canvas** | 3 cột Value / Trust / Feasibility + learning signal. Auto hay aug? Data gì, loại gì, có marginal value? |
-| 2 | **User Stories 4 paths** | 2–3 features × 4 paths: happy / low-confidence / failure / correction |
-| 3 | **Eval metrics + threshold** | 3 metrics + threshold + red flag. Precision hay recall? Tại sao? |
-| 4 | **Top 3 failure modes** | Mỗi failure: trigger → hậu quả → mitigation |
-| 5 | **ROI 3 kịch bản** | Conservative / realistic / optimistic + kill criteria |
-| 6 | **Mini AI spec** | 1 trang tóm tắt: giải gì, cho ai, auto/aug, quality, risk, data flywheel |
-
----
-
-## Demo round (M5, 60 phút)
-
-**Cách chơi:**
-
-1. Mỗi nhóm cử 2-3 người **ở lại demo** tại bàn, 2-3 người **đi xem** nhóm khác
-2. Đi xem + feedback **đủ** các team trong zone
-3. Mỗi lần xem: nghe demo (~3-4 phút) + điền feedback form (~1-2 phút)
-
-**3 tiêu chí feedback (chấm 1-5):**
-
-| # | Tiêu chí | Hỏi |
-|---|----------|-----|
-| 1 | Problem-solution fit | Bài toán rõ? Giải pháp logic? Tại sao cần AI? |
-| 2 | AI product thinking | Auto/aug rõ? Failure modes? Eval metrics có threshold? |
-| 3 | Demo quality | Chạy được? Narrative rõ? Trả lời được câu hỏi? |
-
-Thêm: 1 điều làm tốt + 1 gợi ý cải thiện.
-
-**Nộp đủ feedback** — chấm cả chất lượng review.
-
----
-
-## Checklist trước demo (M4, 15:30)
-
-- [ ] Prototype ready (ít nhất mock)
-- [ ] Demo script 2 phút: ai nói gì, show gì, thứ tự nào
-- [ ] Poster/slides tóm tắt: Problem → Solution → Auto/Aug → Demo
-- [ ] Mỗi người trả lời được: "Auto hay aug?", "Failure mode chính?", "Phần mình làm gì?"
-- [ ] Feedback forms nhận đủ
-
----
-
-## Scoring (chung Day 5 + Day 6 = 100 điểm)
-
-| Hạng mục | Điểm | Loại | Khi nào |
-|----------|------|------|---------|
-| SPEC milestone | 25 | Nhóm (20) + cá nhân (5) | 23h59 09/04/2026 |
-| Prototype milestone | 15 | Nhóm (10) + cá nhân (5) | 23h59 09/04/2026 |
-| Demo Day | 25 | Nhóm (peer feedback 15 + feedback quality 7 + bonus 3) | Present 16:00, nộp file 23h59 09/04 |
-| UX exercise | 10 | Cá nhân + bonus | UX workshop sáng D5 |
-| Individual reflection | 25 | Cá nhân (role 10 + reflection 15) | 23h59 09/04/2026 |
-| **Tổng** | **100** | | |
-
-### Binary gates và penalties
-
-| Tình huống | Hậu quả | Áp dụng cho |
-|-----------|---------|-------------|
-| Không nộp SPEC draft trước 23:59 D5 | -5 điểm từ tổng SPEC | Cả nhóm |
-| Prototype không có AI call thật | Cap Prototype ở 4/10 | Cả nhóm |
-| Không giải thích được phần mình trong demo | 0 điểm Prototype cá nhân (5 điểm) | Cá nhân |
-| Không có commit trên group repo | 0 tất cả điểm cá nhân — SPEC + Prototype (10 điểm) | Cá nhân |
-| Không nộp đủ feedback forms | 0 điểm "nộp đủ" (2 điểm Demo) | Cá nhân |
-| Copy-paste reflection giữa thành viên | 0 toàn bộ reflection (15 điểm) | Tất cả người liên quan |
-
----
-
-## Hướng dẫn nộp bài
-
-**Deadline:** 23h59 09/04/2026 | **Nộp lên:** LMS | **Nộp link 2 public GitHub repo (cá nhân + nhóm)**
-
-Mỗi người nộp **2 link repo public** lên LMS: 1 repo cá nhân + 1 repo nhóm.
-
-### Repo cá nhân
-
-```
-MaHocVien-HoTen-Day06
-```
-
-Ví dụ: `AI20K001-NguyenVanA-Day06`
-
-```
-AI20K001-NguyenVanA-Day06/
-│
-├── feedback.md                    ← Feedback cho các nhóm đã xem trong demo round
-├── reflection.md                  ← Role + đóng góp + reflection cá nhân
-│
-└── extras/                        ← Tùy chọn — nộp thêm để lấy bonus
-    └── ...                        ← Prompt test logs, research notes, screenshot AI conversation,
-                                      design iterations, hoặc bất kỳ output cá nhân nào khác
-```
-
-### Repo nhóm
-
-```
-NhomXX-Lop-Day06
-```
-
-Ví dụ: `Nhom01-403-Day06`
-
-```
-Nhom01-403-Day06/
-│
-├── spec-final.md                  ← SPEC 6 phần
-├── prototype-readme.md            ← Mô tả prototype + link + phân công
-└── demo-slides.pdf                ← Poster hoặc slides dùng khi present
-```
-
-- Cả 2 repo phải **public** — GV cần truy cập được để chấm
-- **Repo cá nhân** chứa feedback + reflection — đây là căn cứ chính cho điểm cá nhân
-- **Folder `extras/`** không bắt buộc — nộp thêm các output cá nhân khác (prompt test logs, design sketches, research notes, screenshot AI conversation...) sẽ được xét **bonus điểm** nếu nội dung có chất lượng và thể hiện quá trình tư duy
-- **Repo nhóm** do nhóm cùng quản lý — mọi thành viên đều nộp link repo nhóm này lên LMS
-
-### Chi tiết từng file
-
-**spec-final.md** — SPEC 6 phần hoàn chỉnh:
-1. AI Product Canvas (Value / Trust / Feasibility + learning signal)
-2. User Stories 4 paths (happy / low-confidence / failure / correction)
-3. Eval metrics + threshold (3 metrics, precision hay recall, red flag)
-4. Top 3 failure modes (trigger → hậu quả → mitigation)
-5. ROI 3 kịch bản (conservative / realistic / optimistic + kill criteria)
-6. Mini AI spec (1 trang tóm tắt)
-
-**prototype-readme.md** gồm:
-- Mô tả prototype (2-3 câu)
-- Level: Sketch / Mock / Working
-- Link prototype (GitHub repo / Figma / deployed app / video nếu có)
-- Tools và API đã dùng
-- Phân công: ai làm gì
-
-**demo-slides.pdf** — poster hoặc slides tóm tắt:
-- Problem → Solution → Auto/Aug → Demo flow
-- Đọc được từ xa 1-2 mét nếu in poster
-
-**feedback.md** — với mỗi nhóm đã xem trong demo round:
-- Tên nhóm
-- 3 tiêu chí × điểm 1-5 (problem-solution fit, AI product thinking, demo quality)
-- 1 điều làm tốt
-- 1 gợi ý cải thiện
-
-**reflection.md** gồm 7 phần:
-1. Role cụ thể trong nhóm (không viết chung chung "thành viên")
-2. Phần phụ trách cụ thể (liệt kê 2-3 đóng góp có output rõ)
-3. SPEC phần nào mạnh nhất, phần nào yếu nhất? Vì sao?
-4. Đóng góp cụ thể khác với mục 2 (ví dụ: test prompt, debug, support)
-5. 1 điều học được trong hackathon mà trước đó chưa biết
-6. Nếu làm lại, đổi gì? (phải cụ thể, không viết "cố gắng hơn")
-7. AI giúp gì? AI sai/mislead ở đâu? (bắt buộc nêu cả hai mặt)
-
----
-
-## Ví dụ bài nộp tốt
-
-### prototype-readme.md
-
-```markdown
-# Prototype — AI triage Vinmec
-
-## Mô tả
-Chatbot hỏi bệnh nhân 3-5 câu về triệu chứng, gợi ý top 3 chuyên khoa phù hợp
-kèm confidence score. Bệnh nhân chọn hoặc gặp lễ tân.
-
-## Level: Mock prototype
-- UI build bằng Claude Artifacts (HTML/CSS/JS)
-- 1 flow chính chạy thật với Gemini API: nhập triệu chứng → nhận gợi ý khoa
-
-## Links
-- Prototype: https://claude.site/artifacts/xxx
-- Prompt test log: xem file `prototype/prompt-tests.md`
-- Video demo (backup): https://drive.google.com/xxx
-
-## Tools
-- UI: Claude Artifacts
-- AI: Google Gemini 2.0 Flash (via Google AI Studio)
-- Prompt: system prompt + few-shot examples cho 10 triệu chứng phổ biến
-
-## Phân công
-| Thành viên | Phần | Output |
-|-----------|------|--------|
-| An | Canvas + failure modes | spec/spec-final.md phần 1, 4 |
-| Bình | User stories 4 paths + prompt engineering | spec/spec-final.md phần 2, prototype/prompt-tests.md |
-| Châu | Eval metrics + ROI + demo slides | spec/spec-final.md phần 3, 5, demo/slides.pdf |
-| Dũng | UI prototype + demo script | prototype/, demo/demo-script.md |
-```
-
-### feedback.md
-
-```markdown
-# Feedback — Demo round Day 6
-
-## Nhom02-403 — AI tutor VinUni
-
-| Tiêu chí | Điểm (1-5) |
-|----------|-----------|
-| Problem-solution fit | 4 |
-| AI product thinking | 3 |
-| Demo quality | 4 |
-
-**Điều làm tốt:** Problem rất rõ — sinh viên không biết hỏi ai khi stuck bài tập.
-Demo flow mượt, chatbot trả lời được câu hỏi thật.
-
-**Gợi ý cải thiện:** Failure mode chưa rõ — nếu chatbot trả lời sai kiến thức chuyên môn
-thì sinh viên làm sao biết? Cần có cơ chế verify hoặc disclaimer rõ hơn trong UI.
-
----
-
-## Nhom03-403 — AI review xe VinFast
-
-| Tiêu chí | Điểm (1-5) |
-|----------|-----------|
-| Problem-solution fit | 3 |
-| AI product thinking | 4 |
-| Demo quality | 3 |
-
-**Điều làm tốt:** Failure modes rất thoughtful — liệt kê được case fake review
-và sentiment analysis sai khi có irony/sarcasm.
-
-**Gợi ý cải thiện:** Demo bị crash giữa chừng. Nên có backup slide/video để show flow
-khi prototype không ổn định.
-```
-
-### reflection.md
-
-```markdown
-# Individual reflection — Nguyễn Văn A (AI20K001)
-
-## 1. Role
-UX designer + prompt engineer. Phụ trách thiết kế flow chatbot và viết system prompt.
-
-## 2. Đóng góp cụ thể
-- Thiết kế conversation flow 5 bước (hỏi vị trí đau → thời gian → mức độ → tiền sử → gợi ý)
-- Viết và test 3 phiên bản system prompt, chọn v3 vì recall tốt nhất trên 10 test cases
-- Vẽ poster layout cho demo
-
-## 3. SPEC mạnh/yếu
-- Mạnh nhất: failure modes — nhóm nghĩ ra được case "triệu chứng chung chung"
-  mà AI gợi ý quá rộng, và có mitigation cụ thể (hỏi thêm câu follow-up)
-- Yếu nhất: ROI — 3 kịch bản thực ra chỉ khác số user, assumption gần giống nhau.
-  Nên tách assumption rõ hơn (VD: conservative = chỉ dùng ở 1 chi nhánh,
-  optimistic = rollout toàn hệ thống)
-
-## 4. Đóng góp khác
-- Test prompt với 10 triệu chứng khác nhau, ghi log kết quả vào prompt-tests.md
-- Giúp Châu debug eval metrics — ban đầu chỉ có "accuracy" chung,
-  sau tách ra precision cho từng khoa
-
-## 5. Điều học được
-Trước hackathon nghĩ precision và recall chỉ là metric kỹ thuật.
-Sau khi thiết kế AI triage mới hiểu: chọn recall cao hơn cho khoa cấp cứu
-(bỏ sót nguy hiểm hơn false alarm) nhưng precision cao hơn cho khoa chuyên sâu
-(gợi ý sai gây lãng phí thời gian bệnh nhân). Metric là product decision,
-không chỉ engineering decision.
-
-## 6. Nếu làm lại
-Sẽ test prompt sớm hơn — ngày đầu chỉ viết SPEC, đến trưa D6 mới bắt đầu test prompt.
-Nếu test sớm từ tối D5 thì có thể iterate thêm 2-3 vòng, prompt sẽ tốt hơn nhiều.
-
-## 7. AI giúp gì / AI sai gì
-- **Giúp:** dùng Claude để brainstorm failure modes — nó gợi ý được "drug interaction"
-  mà nhóm không nghĩ ra. Dùng Gemini để test prompt nhanh qua AI Studio.
-- **Sai/mislead:** Claude gợi ý thêm feature "đặt lịch khám" vào chatbot —
-  nghe hay nhưng scope quá lớn cho hackathon. Suýt bị scope creep nếu không dừng lại.
-  Bài học: AI brainstorm tốt nhưng không biết giới hạn scope.
-```
-
----
-
-## Checklist trước khi nộp
-
-- [ ] Repo cá nhân đặt tên đúng: `MaHocVien-HoTen-Day06`
-- [ ] Repo nhóm đặt tên đúng: `NhomXX-Lop-Day06`
-- [ ] Repo cá nhân có: `feedback.md` + `reflection.md`
-- [ ] Repo nhóm có: `spec-final.md` + `prototype-readme.md` + `demo-slides.pdf`
-- [ ] SPEC đủ 6 phần
-- [ ] Prototype readme có link + mô tả + phân công
-- [ ] Feedback có đủ các nhóm đã xem trong zone
-- [ ] Reflection đủ 7 phần, không copy-paste với bạn cùng nhóm
-- [ ] Có ít nhất 1 commit trên group repo
-
----
-
-## Tài liệu trong repo này
-
-### Templates — [`02-templates/`](02-templates/)
-
-| File | Dùng cho |
-|------|----------|
-| [`01-spec-template.md`](02-templates/01-spec-template.md) | SPEC 6 phần — template chính |
-| [`02-canvas-template.md`](02-templates/02-canvas-template.md) | AI Product Canvas |
-| [`03-user-stories-4path.md`](02-templates/03-user-stories-4path.md) | User stories × 4 paths |
-| [`04-eval-metrics.md`](02-templates/04-eval-metrics.md) | Eval metrics + threshold |
-| [`05-failure-modes.md`](02-templates/05-failure-modes.md) | Top 3 failure modes |
-| [`06-roi-3-scenarios.md`](02-templates/06-roi-3-scenarios.md) | ROI 3 kịch bản |
-| [`07-poster-layout.md`](02-templates/07-poster-layout.md) | Poster/slides layout |
-| [`08-demo-script.md`](02-templates/08-demo-script.md) | Demo script 2 phút |
-
-### Hướng dẫn công cụ — [`03-tools-guide/`](03-tools-guide/)
-
-| File | Nội dung |
-|------|----------|
-| [`api-cheatsheet.md`](03-tools-guide/api-cheatsheet.md) | API key setup, model nào cho gì |
-| [`prototyping-tools.md`](03-tools-guide/prototyping-tools.md) | Tools theo level prototype + hướng dẫn từng tool |
-| [`prompt-engineering-tips.md`](03-tools-guide/prompt-engineering-tips.md) | Prompt tips cho hackathon |
-
-### Tham khảo — [`04-reference/`](04-reference/)
-
-| File | Nội dung |
-|------|----------|
-| [`day5-cheatsheet.md`](04-reference/day5-cheatsheet.md) | Recap 1 trang các framework Day 5 |
-| [`canvas-example.md`](04-reference/canvas-example.md) | Ví dụ Canvas hoàn chỉnh (AI Email Triage) |
-
-### Luật chơi — [`05-rules/`](05-rules/)
-
-| File | Nội dung |
-|------|----------|
-| [`hackathon-rules.md`](05-rules/hackathon-rules.md) | Rules, timeline, milestones, scoring, demo round |
-
----
-
-*Ngày 6 — VinUni A20 — AI Thực Chiến · 2026*
+## 📂 Cấu trúc thư mục quan trọng
+- `src/`: Mã nguồn chính (API, Models, Services).
+- `data/cs231n/`: Chứa Video, Transcript và ToC JSON.
+- `prompts/`: Chứa các mẫu prompt tối ưu để trích xuất dữ liệu bài giảng.
+- `app.db`: Database SQLite (Tự động khởi tạo khi chạy Docker/API).
+- `logs/`: Lịch sử câu hỏi theo phiên dưới dạng cấu trúc JSON.
+
+## 🧪 Tài liệu bổ sung
+- Sử dụng prompt trong `prompts/lecture_extraction_prompt.txt` để trích xuất summary bài giảng mới đạt độ chính xác cao nhất đối với các môn học khác.
